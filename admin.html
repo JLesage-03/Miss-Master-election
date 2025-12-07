@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - NFONAP Elections 2025</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="assets/nfonap-logo.png">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="assets/nfonap-logo.png" alt="NFONAP University" class="logo-img">
+                <div>
+                    <div class="logo-text">NFONAP UNIVERSITY</div>
+                    <div class="logo-tagline">Admin Dashboard</div>
+                </div>
+            </a>
+            
+            <nav class="nav">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="miss.html" class="nav-link">
+                    <i class="fas fa-female"></i> Miss
+                </a>
+                <a href="master.html" class="nav-link">
+                    <i class="fas fa-male"></i> Master
+                </a>
+                <a href="admin.html" class="admin-badge" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                    <i class="fas fa-user-shield"></i> Admin
+                </a>
+                <button class="btn btn-danger btn-sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+            
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Admin Dashboard -->
+    <section class="hero" style="padding-top: 120px; min-height: 100vh;">
+        <div class="container">
+            <!-- Login Section -->
+            <div id="login-section" class="text-center" style="max-width: 400px; margin: 0 auto; padding: 3rem;">
+                <h2 style="margin-bottom: 2rem;">Admin Login</h2>
+                <div class="form-group">
+                    <input type="text" id="admin-username" class="form-control" placeholder="Username" style="margin-bottom: 1rem;">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="admin-password" class="form-control" placeholder="Password" style="margin-bottom: 1.5rem;">
+                </div>
+                <button class="btn btn-primary btn-full" onclick="login()">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <div class="form-text text-center mt-3">
+                    <strong>Default:</strong> admin / nfonap2025<br>
+                    <small class="text-danger">Change password after first login!</small>
+                </div>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" style="display: none;">
+                <!-- Dashboard Header -->
+                <div class="d-flex justify-between align-center mb-4">
+                    <div>
+                        <h1 style="margin-bottom: 0.5rem;">Admin Dashboard</h1>
+                        <p>Welcome, <span id="admin-name">Admin</span> | Last login: <span id="last-login">Now</span></p>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-secondary" onclick="refreshDashboard()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="btn btn-accent" onclick="exportData()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button class="btn btn-primary" onclick="showAddCandidateModal()">
+                            <i class="fas fa-user-plus"></i> Add Candidate
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="stats-grid mb-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-number" id="admin-total-candidates">0</div>
+                        <div class="stat-label">Total Candidates</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-vote-yea"></i>
+                        </div>
+                        <div class="stat-number" id="admin-total-votes">0</div>
+                        <div class="stat-label">Total Votes</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-female"></i>
+                        </div>
+                        <div class="stat-number" id="admin-miss-candidates">0</div>
+                        <div class="stat-label">Miss Candidates</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-male"></i>
+                        </div>
+                        <div class="stat-number" id="admin-master-candidates">0</div>
+                        <div class="stat-label">Master Candidates</div>
+                    </div>
+                </div>
+
+                <!-- Candidates Management -->
+                <div class="card" style="background: white; border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
+                    <div class="d-flex justify-between align-center mb-3">
+                        <h3 style="margin: 0;">Manage Candidates</h3>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-outline'}" onclick="filterCandidates('all')">All</button>
+                            <button class="btn btn-sm ${filter === 'miss' ? 'btn-primary' : 'btn-outline'}" onclick="filterCandidates('miss')">Miss</button>
+                            <button class="btn btn-sm ${filter === 'master' ? 'btn-primary' : 'btn-outline'}" onclick="filterCandidates('master')">Master</button>
+                        </div>
+                    </div>
+                    
+                    <div id="candidates-table">
+                        <!-- Candidates will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Database Management -->
+                <div class="card" style="background: white; border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-md);">
+                    <h3 style="margin-bottom: 1.5rem;">Database Management</h3>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary" onclick="backupDatabase()">
+                            <i class="fas fa-database"></i> Backup Database
+                        </button>
+                        <button class="btn btn-secondary" onclick="restoreDatabase()">
+                            <i class="fas fa-upload"></i> Restore Database
+                        </button>
+                        <button class="btn btn-danger" onclick="resetDatabase()">
+                            <i class="fas fa-trash"></i> Reset Database
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Add Candidate Modal -->
+    <div id="add-candidate-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Add New Candidate</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-candidate-form" onsubmit="event.preventDefault(); addCandidate();">
+                    <div class="d-flex gap-2 mb-3">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Category *</label>
+                            <select id="candidate-category" class="form-control" required>
+                                <option value="">Select Category</option>
+                                <option value="miss">Miss NFONAP</option>
+                                <option value="master">Master NFONAP</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 2;">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" id="candidate-name" class="form-control" placeholder="John Doe" required>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 mb-3">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Program *</label>
+                            <input type="text" id="candidate-program" class="form-control" placeholder="Computer Science" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Department *</label>
+                            <input type="text" id="candidate-department" class="form-control" placeholder="Faculty of Engineering" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="form-label">Email (Optional)</label>
+                        <input type="email" id="candidate-email" class="form-control" placeholder="candidate@nfonap.edu.cm">
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="form-label">Biography *</label>
+                        <textarea id="candidate-bio" class="form-control" rows="3" placeholder="Candidate biography..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="form-label">Manifesto (Optional)</label>
+                        <textarea id="candidate-manifesto" class="form-control" rows="3" placeholder="Candidate manifesto..."></textarea>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label">Photo (Optional)</label>
+                        <input type="file" id="candidate-photo" class="form-control" accept="image/*">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddCandidateModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addCandidate()">Add Candidate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Candidate Modal -->
+    <div id="edit-candidate-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Edit Candidate</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-candidate-form" onsubmit="event.preventDefault(); updateCandidate();">
+                    <input type="hidden" id="edit-candidate-id">
+                    
+                    <div class="d-flex gap-2 mb-3">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Category *</label>
+                            <select id="edit-candidate-category" class="form-control" required>
+                                <option value="miss">Miss NFONAP</option>
+                                <option value="master">Master NFONAP</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 2;">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" id="edit-candidate-name" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 mb-3">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Program *</label>
+                            <input type="text" id="edit-candidate-program" class="form-control" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Department *</label>
+                            <input type="text" id="edit-candidate-department" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="edit-candidate-email" class="form-control">
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="form-label">Biography *</label>
+                        <textarea id="edit-candidate-bio" class="form-control" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="form-label">Manifesto</label>
+                        <textarea id="edit-candidate-manifesto" class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditCandidateModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="updateCandidate()">Update Candidate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Change Modal -->
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Change Password</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-3">
+                    <label class="form-label">Current Password *</label>
+                    <input type="password" id="current-password" class="form-control" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">New Password *</label>
+                    <input type="password" id="new-password" class="form-control" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Confirm Password *</label>
+                    <input type="password" id="confirm-password" class="form-control" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="script.js"></script>
+    <script src="admin-script.js"></script>
+</body>
+</html>

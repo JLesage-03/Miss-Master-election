@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFONAP University - Miss & Master Elections 2025</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="assets/nfonap-logo.png">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="assets/nfonap-logo.jpg" alt="NFONAP University" class="logo-img">
+                <div>
+                    <div class="logo-text">NFONAP UNIVERSITY</div>
+                    <div class="logo-tagline">Student Union Government</div>
+                </div>
+            </a>
+            
+            <nav class="nav">
+                <a href="index.html" class="nav-link active">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="miss.html" class="nav-link">
+                    <i class="fas fa-female"></i> Miss NFONAP
+                </a>
+                <a href="master.html" class="nav-link">
+                    <i class="fas fa-male"></i> Master NFONAP
+                </a>
+                <a href="admin.html" class="admin-badge">
+                    <i class="fas fa-lock"></i> Admin
+                </a>
+            </nav>
+            
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content animate-fade-in">
+                <h1 class="hero-title">NFONAP MISS & MASTER ELECTIONS 2025</h1>
+                <p class="hero-subtitle">"Celebrating Excellence, Leadership, and Campus Spirit"</p>
+                
+                <div class="countdown-container animate-slide-left">
+                    <div class="countdown-title">Voting Ends In:</div>
+                    <div class="countdown">
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-days">00</div>
+                            <div class="countdown-label">Days</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-hours">00</div>
+                            <div class="countdown-label">Hours</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-minutes">00</div>
+                            <div class="countdown-label">Minutes</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-seconds">00</div>
+                            <div class="countdown-label">Seconds</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="cta-buttons">
+                    <a href="miss.html" class="btn btn-primary btn-lg animate-pulse">
+                        <i class="fas fa-female"></i> Vote for Miss
+                    </a>
+                    <a href="master.html" class="btn btn-secondary btn-lg animate-pulse">
+                        <i class="fas fa-male"></i> Vote for Master
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title text-center">Election Statistics</h2>
+            <p class="text-center mb-4" style="max-width: 600px; margin: 0 auto;">
+                Real-time statistics showing the progress of the NFONAP Miss & Master Elections 2025.
+            </p>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-number" id="total-candidates">0</div>
+                    <div class="stat-label">Total Candidates</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-vote-yea"></i>
+                    </div>
+                    <div class="stat-number" id="total-votes">0</div>
+                    <div class="stat-label">Total Votes</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-female"></i>
+                    </div>
+                    <div class="stat-number" id="miss-count">0</div>
+                    <div class="stat-label">Miss Candidates</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-male"></i>
+                    </div>
+                    <div class="stat-number" id="master-count">0</div>
+                    <div class="stat-label">Master Candidates</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="candidates-section">
+        <div class="container">
+            <div class="candidates-header">
+                <div class="category-badge">Voting Categories</div>
+                <h2>Meet the Candidates</h2>
+                <p>Vote for your favorite candidates in each category</p>
+            </div>
+            
+            <div class="candidates-grid">
+                <div class="candidate-card">
+                    <div class="candidate-image">
+                        <div style="background: linear-gradient(135deg, #420942, #6a3a6a); width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-female" style="font-size: 4rem; color: white;"></i>
+                        </div>
+                        <div class="candidate-category">Miss NFONAP</div>
+                    </div>
+                    <div class="candidate-info">
+                        <h3 class="candidate-name">Miss NFONAP Category</h3>
+                        <p class="candidate-bio">
+                            Vote for the most outstanding female student who embodies leadership, 
+                            academic excellence, and campus spirit. The winner will represent NFONAP 
+                            University in various events throughout the year.
+                        </p>
+                        <div class="candidate-stats">
+                            <div class="vote-count">
+                                <i class="fas fa-user-friends"></i> 
+                                <span id="miss-category-count">0</span> candidates
+                            </div>
+                        </div>
+                        <a href="miss.html" class="btn btn-primary btn-full vote-btn">
+                            <i class="fas fa-vote-yea"></i> View & Vote for Miss
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="candidate-card">
+                    <div class="candidate-image">
+                        <div style="background: linear-gradient(135deg, #FFD700, #ffed4e); width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-male" style="font-size: 4rem; color: #420942;"></i>
+                        </div>
+                        <div class="candidate-category">Master NFONAP</div>
+                    </div>
+                    <div class="candidate-info">
+                        <h3 class="candidate-name">Master NFONAP Category</h3>
+                        <p class="candidate-bio">
+                            Vote for the most outstanding male student who demonstrates leadership, 
+                            academic excellence, and commitment to student welfare. The winner will 
+                            serve as a campus ambassador for NFONAP University.
+                        </p>
+                        <div class="candidate-stats">
+                            <div class="vote-count">
+                                <i class="fas fa-user-friends"></i> 
+                                <span id="master-category-count">0</span> candidates
+                            </div>
+                        </div>
+                        <a href="master.html" class="btn btn-secondary btn-full vote-btn">
+                            <i class="fas fa-vote-yea"></i> View & Vote for Master
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rules Section -->
+    <section class="section" style="background: linear-gradient(135deg, #f8f9fa, #ffffff);">
+        <div class="container">
+            <h2 class="section-title text-center">Election Rules</h2>
+            <p class="text-center mb-4" style="max-width: 700px; margin: 0 auto;">
+                To ensure a fair and transparent election process, please follow these rules:
+            </p>
+            
+            <div class="rules-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <h3>Eligibility</h3>
+                    <p>Only registered NFONAP students are eligible to vote and participate as candidates.</p>
+                </div>
+                
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h3>One Vote Per Email</h3>
+                    <p>Each voter can vote only once per category using a valid email address.</p>
+                </div>
+                
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Voting Deadline</h3>
+                    <p>Voting closes on December 13, 2025 at 1:00 PM sharp. No votes will be accepted after this time.</p>
+                </div>
+                
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Fair Voting</h3>
+                    <p>Any attempt to manipulate votes will result in disqualification of the candidate.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Voting Modal -->
+    <div id="vote-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cast Your Vote</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <p>You are voting for:</p>
+                    <h4 id="modal-candidate-name" style="color: #420942;"></h4>
+                    <p id="modal-candidate-category" style="color: #6c757d;"></p>
+                </div>
+                
+                <form id="vote-form" onsubmit="event.preventDefault(); submitVote();">
+                    <input type="hidden" id="modal-candidate-id">
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="voter-name">
+                            <i class="fas fa-user"></i> Your Full Name *
+                        </label>
+                        <input type="text" id="voter-name" class="form-control" placeholder="Enter your full name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="voter-email">
+                            <i class="fas fa-envelope"></i> Your Email Address *
+                        </label>
+                        <input type="email" id="voter-email" class="form-control" placeholder="student@nfonap.edu.cm" required>
+                        <div class="form-text">
+                            Your email will be used to verify your vote and prevent duplicate voting.
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <i class="fas fa-vote-yea"></i> Submit Vote
+                        </button>
+                    </div>
+                    
+                    <div class="form-text text-center">
+                        By voting, you agree to the election rules and confirm that you are a registered NFONAP student.
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <a href="index.html" class="logo">
+                        <img src="assets/nfonap-logo.jpg" alt="NFONAP University" class="logo-img">
+                        <div>
+                            <div class="logo-text">NFONAP UNIVERSITY</div>
+                            <div class="logo-tagline">Student Union Government</div>
+                        </div>
+                    </a>
+                    <p class="footer-text">
+                        NFONAP Miss & Master Elections 2025 - Celebrating student excellence and leadership.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="footer-heading">Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html"><i class="fas fa-chevron-right"></i> Home</a></li>
+                        <li><a href="miss.html"><i class="fas fa-chevron-right"></i> Miss NFONAP</a></li>
+                        <li><a href="master.html"><i class="fas fa-chevron-right"></i> Master NFONAP</a></li>
+                        <li><a href="admin.html"><i class="fas fa-chevron-right"></i> Admin Panel</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-contact">
+                    <h4 class="footer-heading">Contact Us</h4>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div>
+                            <div>sugnfonap@gmail.com</div>
+                            <small>Student Union Government</small>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div>
+                            <div>+237 657 691 004</div>
+                            <small>Election Committee</small>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div>
+                            <div>NFONAP University Campus</div>
+                            <small>Student Union Office</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 NFONAP University Student Union Government. All rights reserved.</p>
+                <p>Election Platform v2.0 | Designed with ❤️ for NFONAP Students</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Update category counts
+        document.addEventListener('DOMContentLoaded', function() {
+            const db = window.db;
+            if (db) {
+                const missCount = db.getCandidates('miss').length;
+                const masterCount = db.getCandidates('master').length;
+                
+                const missEl = document.getElementById('miss-category-count');
+                const masterEl = document.getElementById('master-category-count');
+                
+                if (missEl) missEl.textContent = missCount;
+                if (masterEl) masterEl.textContent = masterCount;
+            }
+        });
+    </script>
+</body>
+</html>

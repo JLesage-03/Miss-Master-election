@@ -1,0 +1,23 @@
+nfonap-elections/
+├── index.html
+├── miss.html
+├── master.html
+├── candidate-portal.html
+├── admin.html
+├── style.css
+├── script.js
+├── admin-script.js
+├── netlify.toml
+├── _redirects
+├── assets/
+│   ├── nfonap-logo.png
+│   └── default-avatar.jpg
+└── README.md
+
+//_redirects
+
+/*    /index.html    200
+/candidate-portal    /candidate-portal.html    200
+/admin    /admin.html    200
+/miss    /miss.html    200
+/master    /master.html    200

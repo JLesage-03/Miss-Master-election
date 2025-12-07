@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miss NFONAP 2025 - NFONAP University Elections</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="assets/nfonap-logo.png">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="assets/nfonap-logo.jpg" alt="NFONAP University" class="logo-img">
+                <div>
+                    <div class="logo-text">NFONAP UNIVERSITY</div>
+                    <div class="logo-tagline">Student Union Government</div>
+                </div>
+            </a>
+            
+            <nav class="nav">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="miss.html" class="nav-link active">
+                    <i class="fas fa-female"></i> Miss NFONAP
+                </a>
+                <a href="master.html" class="nav-link">
+                    <i class="fas fa-male"></i> Master NFONAP
+                </a>
+                <a href="admin.html" class="admin-badge">
+                    <i class="fas fa-lock"></i> Admin
+                </a>
+            </nav>
+            
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="portal-header" style="padding-bottom: 3rem;">
+        <div class="container">
+            <div class="text-center">
+                <div class="category-badge" style="background: linear-gradient(135deg, #FFD700, #ffed4e); color: #420942; margin-bottom: 1rem;">
+                    <i class="fas fa-female"></i> Miss NFONAP
+                </div>
+                <h1 class="portal-title">Miss NFONAP 2025 Candidates</h1>
+                <p class="portal-subtitle" style="max-width: 600px; margin: 0 auto;">
+                    Vote for the most outstanding female student who embodies leadership, academic excellence, and campus spirit.
+                </p>
+                
+                <div class="countdown-container" style="max-width: 500px; margin: 2rem auto;">
+                    <div class="countdown-title">Voting Ends In:</div>
+                    <div class="countdown">
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-days">00</div>
+                            <div class="countdown-label">Days</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-hours">00</div>
+                            <div class="countdown-label">Hours</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-minutes">00</div>
+                            <div class="countdown-label">Minutes</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-seconds">00</div>
+                            <div class="countdown-label">Seconds</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Candidates Section -->
+    <section class="candidates-section">
+        <div class="container">
+            <div id="candidates-container">
+                <!-- Candidates will be loaded here -->
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="index.html" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Voting Instructions -->
+    <section class="section" style="background: linear-gradient(135deg, #f8f9fa, #ffffff);">
+        <div class="container">
+            <h2 class="section-title text-center">How to Vote</h2>
+            
+            <div class="rules-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <span>1</span>
+                    </div>
+                    <h3>Browse Candidates</h3>
+                    <p>View all Miss NFONAP candidates and read their profiles and manifestos.</p>
+                </div>
+                
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <span>2</span>
+                    </div>
+                    <h3>Select Candidate</h3>
+                    <p>Click the "Vote Now" button on your preferred candidate's card.</p>
+                </div>
+                
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <span>3</span>
+                    </div>
+                    <h3>Enter Details</h3>
+                    <p>Fill in your name and email address in the voting form.</p>
+                </div>
+                
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <span>4</span>
+                    </div>
+                    <h3>Submit Vote</h3>
+                    <p>Click "Submit Vote" to confirm. You'll receive a confirmation message.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Voting Modal -->
+    <div id="vote-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cast Your Vote</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <p>You are voting for:</p>
+                    <h4 id="modal-candidate-name" style="color: #420942;"></h4>
+                    <p id="modal-candidate-category" style="color: #6c757d;"></p>
+                </div>
+                
+                <form id="vote-form" onsubmit="event.preventDefault(); submitVote();">
+                    <input type="hidden" id="modal-candidate-id">
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="voter-name">
+                            <i class="fas fa-user"></i> Your Full Name *
+                        </label>
+                        <input type="text" id="voter-name" class="form-control" placeholder="Enter your full name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="voter-email">
+                            <i class="fas fa-envelope"></i> Your Email Address *
+                        </label>
+                        <input type="email" id="voter-email" class="form-control" placeholder="student@nfonap.edu.cm" required>
+                        <div class="form-text">
+                            Your email will be used to verify your vote and prevent duplicate voting.
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <i class="fas fa-vote-yea"></i> Submit Vote
+                        </button>
+                    </div>
+                    
+                    <div class="form-text text-center">
+                        By voting, you agree to the election rules and confirm that you are a registered NFONAP student.
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <a href="index.html" class="logo">
+                        <img src="assets/nfonap-logo.jpg" alt="NFONAP University" class="logo-img">
+                        <div>
+                            <div class="logo-text">NFONAP UNIVERSITY</div>
+                            <div class="logo-tagline">Student Union Government</div>
+                        </div>
+                    </a>
+                    <p class="footer-text">
+                        Miss NFONAP Elections 2025 - Celebrating female student excellence and leadership.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="footer-heading">Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html"><i class="fas fa-chevron-right"></i> Home</a></li>
+                        <li><a href="master.html"><i class="fas fa-chevron-right"></i> Master NFONAP</a></li>
+                        <li><a href="admin.html"><i class="fas fa-chevron-right"></i> Admin Panel</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-contact">
+                    <h4 class="footer-heading">Contact Us</h4>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div>
+                            <div>sugnfonap@gmail.com</div>
+                            <small>Student Union Government</small>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div>
+                            <div>+237 657 691 004</div>
+                            <small>Election Committee</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 NFONAP University Student Union Government. All rights reserved.</p>
+                <p>Miss NFONAP Elections 2025 | Vote for Excellence</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

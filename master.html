@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master NFONAP 2025 - NFONAP University Elections</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="assets/nfonap-logo.png">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="assets/nfonap-logo.jpg" alt="NFONAP University" class="logo-img">
+                <div>
+                    <div class="logo-text">NFONAP UNIVERSITY</div>
+                    <div class="logo-tagline">Student Union Government</div>
+                </div>
+            </a>
+            
+            <nav class="nav">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="miss.html" class="nav-link">
+                    <i class="fas fa-female"></i> Miss NFONAP
+                </a>
+                <a href="master.html" class="nav-link active">
+                    <i class="fas fa-male"></i> Master NFONAP
+                </a>
+                <a href="admin.html" class="admin-badge">
+                    <i class="fas fa-lock"></i> Admin
+                </a>
+            </nav>
+            
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="portal-header" style="padding-bottom: 3rem;">
+        <div class="container">
+            <div class="text-center">
+                <div class="category-badge" style="background: linear-gradient(135deg, #FFD700, #ffed4e); color: #420942; margin-bottom: 1rem;">
+                    <i class="fas fa-male"></i> Master NFONAP
+                </div>
+                <h1 class="portal-title">Master NFONAP 2025 Candidates</h1>
+                <p class="portal-subtitle" style="max-width: 600px; margin: 0 auto;">
+                    Vote for the most outstanding male student who demonstrates leadership, academic excellence, and commitment to student welfare.
+                </p>
+                
+                <div class="countdown-container" style="max-width: 500px; margin: 2rem auto;">
+                    <div class="countdown-title">Voting Ends In:</div>
+                    <div class="countdown">
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-days">00</div>
+                            <div class="countdown-label">Days</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-hours">00</div>
+                            <div class="countdown-label">Hours</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-minutes">00</div>
+                            <div class="countdown-label">Minutes</div>
+                        </div>
+                        <div class="countdown-item">
+                            <div class="countdown-number" id="countdown-seconds">00</div>
+                            <div class="countdown-label">Seconds</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Candidates Section -->
+    <section class="candidates-section">
+        <div class="container">
+            <div id="candidates-container">
+                <!-- Candidates will be loaded here -->
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="index.html" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="section" style="background: linear-gradient(135deg, #f8f9fa, #ffffff);">
+        <div class="container">
+            <h2 class="section-title text-center">Master NFONAP Statistics</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-male"></i>
+                    </div>
+                    <div class="stat-number" id="master-total-candidates">0</div>
+                    <div class="stat-label">Total Candidates</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-vote-yea"></i>
+                    </div>
+                    <div class="stat-number" id="master-total-votes">0</div>
+                    <div class="stat-label">Total Votes</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-number" id="master-leading-votes">0</div>
+                    <div class="stat-label">Leading Candidate Votes</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div id="master-voting-status" class="stat-number" style="font-size: 1.5rem;">Open</div>
+                    <div class="stat-label">Voting Status</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Voting Modal -->
+    <div id="vote-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cast Your Vote</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <p>You are voting for:</p>
+                    <h4 id="modal-candidate-name" style="color: #420942;"></h4>
+                    <p id="modal-candidate-category" style="color: #6c757d;"></p>
+                </div>
+                
+                <form id="vote-form" onsubmit="event.preventDefault(); submitVote();">
+                    <input type="hidden" id="modal-candidate-id">
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="voter-name">
+                            <i class="fas fa-user"></i> Your Full Name *
+                        </label>
+                        <input type="text" id="voter-name" class="form-control" placeholder="Enter your full name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="voter-email">
+                            <i class="fas fa-envelope"></i> Your Email Address *
+                        </label>
+                        <input type="email" id="voter-email" class="form-control" placeholder="student@nfonap.edu.cm" required>
+                        <div class="form-text">
+                            Your email will be used to verify your vote and prevent duplicate voting.
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <i class="fas fa-vote-yea"></i> Submit Vote
+                        </button>
+                    </div>
+                    
+                    <div class="form-text text-center">
+                        By voting, you agree to the election rules and confirm that you are a registered NFONAP student.
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <a href="index.html" class="logo">
+                        <img src="assets/nfonap-logo.jpg" alt="NFONAP University" class="logo-img">
+                        <div>
+                            <div class="logo-text">NFONAP UNIVERSITY</div>
+                            <div class="logo-tagline">Student Union Government</div>
+                        </div>
+                    </a>
+                    <p class="footer-text">
+                        Master NFONAP Elections 2025 - Celebrating male student excellence and leadership.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="footer-heading">Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html"><i class="fas fa-chevron-right"></i> Home</a></li>
+                        <li><a href="miss.html"><i class="fas fa-chevron-right"></i> Miss NFONAP</a></li>
+                        <li><a href="admin.html"><i class="fas fa-chevron-right"></i> Admin Panel</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-contact">
+                    <h4 class="footer-heading">Contact Us</h4>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div>
+                            <div>sugnfonap@gmail.com</div>
+                            <small>Student Union Government</small>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div>
+                            <div>+237 657 691 004</div>
+                            <small>Election Committee</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 NFONAP University Student Union Government. All rights reserved.</p>
+                <p>Master NFONAP Elections 2025 | Vote for Leadership</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Update Master NFONAP statistics
+        document.addEventListener('DOMContentLoaded', function() {
+            const db = window.db;
+            if (db) {
+                const masterCandidates = db.getCandidates('master');
+                const masterVotes = db.votes.filter(v => {
+                    const candidate = db.getCandidateById(v.candidateId);
+                    return candidate && candidate.category === 'master';
+                });
+                
+                // Calculate leading candidate votes
+                let leadingVotes = 0;
+                masterCandidates.forEach(candidate => {
+                    const votes = db.getCandidateVoteCount(candidate.id);
+                    if (votes > leadingVotes) leadingVotes = votes;
+                });
+                
+                // Update statistics
+                const totalCandidatesEl = document.getElementById('master-total-candidates');
+                const totalVotesEl = document.getElementById('master-total-votes');
+                const leadingVotesEl = document.getElementById('master-leading-votes');
+                const statusEl = document.getElementById('master-voting-status');
+                
+                if (totalCandidatesEl) totalCandidatesEl.textContent = masterCandidates.length;
+                if (totalVotesEl) totalVotesEl.textContent = masterVotes.length;
+                if (leadingVotesEl) leadingVotesEl.textContent = leadingVotes;
+                if (statusEl) {
+                    statusEl.textContent = db.isVotingOpen() ? 'Open' : 'Closed';
+                    statusEl.style.color = db.isVotingOpen() ? '#28a745' : '#dc3545';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

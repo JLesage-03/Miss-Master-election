@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidate Portal - NFONAP Elections 2025</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="assets/nfonap-logo.png">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="assets/nfonap-logo.jpg" alt="NFONAP University" class="logo-img">
+                <div>
+                    <div class="logo-text">NFONAP UNIVERSITY</div>
+                    <div class="logo-tagline">Student Union Government</div>
+                </div>
+            </a>
+            
+            <nav class="nav">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="miss.html" class="nav-link">
+                    <i class="fas fa-female"></i> Miss NFONAP
+                </a>
+                <a href="master.html" class="nav-link">
+                    <i class="fas fa-male"></i> Master NFONAP
+                </a>
+                <a href="admin.html" class="admin-badge">
+                    <i class="fas fa-lock"></i> Admin
+                </a>
+            </nav>
+            
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Portal Header -->
+    <section class="portal-header">
+        <div class="container">
+            <div class="text-center">
+                <div class="category-badge" style="background: rgba(255,255,255,0.2); color: white; margin-bottom: 1rem;">
+                    <i class="fas fa-chart-line"></i> Candidate Monitoring
+                </div>
+                <h1 class="portal-title">Candidate Dashboard</h1>
+                <p class="portal-subtitle" style="max-width: 600px; margin: 0 auto;">
+                    Real-time vote tracking and statistics for NFONAP Election candidates
+                </p>
+                
+                <div id="portal-loading" style="padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                    <p>Loading candidate information...</p>
+                </div>
+                
+                <div id="portal-content" style="display: none;">
+                    <!-- Dashboard will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Information Section -->
+    <section class="section" style="background: var(--gray-100); display: none;" id="info-section">
+        <div class="container">
+            <h2 class="section-title text-center">Portal Features</h2>
+            
+            <div class="rules-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <h3>Real-time Updates</h3>
+                    <p>Vote counts update automatically every 10 seconds. No need to refresh the page.</p>
+                </div>
+                
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Secure Access</h3>
+                    <p>Only candidates with valid monitoring links can access this portal.</p>
+                </div>
+                
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3>Vote History</h3>
+                    <p>View recent votes with timestamps to track voting activity.</p>
+                </div>
+                
+                <div class="rule-card" style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #420942, #6a3a6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h3>Statistics</h3>
+                    <p>See your percentage of total votes and progress over time.</p>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="index.html" class="btn btn-outline">
+                    <i class="fas fa-home"></i> Return to Home
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <a href="index.html" class="logo">
+                        <img src="assets/nfonap-logo.jpg" alt="NFONAP University" class="logo-img">
+                        <div>
+                            <div class="logo-text">NFONAP UNIVERSITY</div>
+                            <div class="logo-tagline">Student Union Government</div>
+                        </div>
+                    </a>
+                    <p class="footer-text">
+                        Candidate Monitoring Portal - NFONAP Elections 2025
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="footer-heading">Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html"><i class="fas fa-chevron-right"></i> Home</a></li>
+                        <li><a href="miss.html"><i class="fas fa-chevron-right"></i> Miss NFONAP</a></li>
+                        <li><a href="master.html"><i class="fas fa-chevron-right"></i> Master NFONAP</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-contact">
+                    <h4 class="footer-heading">Technical Support</h4>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div>
+                            <div>sugnfonap@gmail.com</div>
+                            <small>Technical Support</small>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div>
+                            <div>+237 657 691 004</div>
+                            <small>Election Committee</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 NFONAP University Student Union Government. All rights reserved.</p>
+                <p>Candidate Portal v2.0 | Secure Monitoring System</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
