@@ -117,8 +117,12 @@ function login() {
         return;
     }
 
-    // Verify credentials
-    if (username === CONFIG.ADMIN_CREDENTIALS.username && password === CONFIG.ADMIN_CREDENTIALS.password) {
+    // Vérifie le mot de passe stocké
+    let storedPassword = localStorage.getItem('adminPassword');
+    if (!storedPassword) {
+        storedPassword = CONFIG.ADMIN_CREDENTIALS.password;
+    }
+    if (username === CONFIG.ADMIN_CREDENTIALS.username && password === storedPassword) {
         adminSession = {
             username: username,
             loginTime: new Date().toISOString(),
@@ -519,7 +523,11 @@ function changePassword() {
         return;
     }
 
-    if (currentPassword !== CONFIG.ADMIN_CREDENTIALS.password) {
+    let storedPassword = localStorage.getItem('adminPassword');
+    if (!storedPassword) {
+        storedPassword = CONFIG.ADMIN_CREDENTIALS.password;
+    }
+    if (currentPassword !== storedPassword) {
         Toast.show('Current password is incorrect', 'error');
         return;
     }
@@ -534,8 +542,7 @@ function changePassword() {
         return;
     }
 
-    // Update password in config
-    CONFIG.ADMIN_CREDENTIALS.password = newPassword;
+    // Met à jour le mot de passe dans localStorage
     localStorage.setItem('adminPassword', newPassword);
 
     // Clear form and close modal
