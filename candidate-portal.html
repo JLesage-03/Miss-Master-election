@@ -472,8 +472,98 @@
                     Real-time vote tracking and statistics for NFONAP Election candidates
                 </p>
             </div>
+            <div class="countdown-container" style="max-width: 500px; margin: 2rem auto;">
+    <div class="countdown-title">Voting Ends In:</div>
+    <div class="countdown">
+        <div class="countdown-item">
+            <div class="countdown-number" id="countdown-days">00</div>
+            <div class="countdown-label">Days</div>
+        </div>
+        <div class="countdown-item">
+            <div class="countdown-number" id="countdown-hours">00</div>
+            <div class="countdown-label">Hours</div>
+        </div>
+        <div class="countdown-item">
+            <div class="countdown-number" id="countdown-minutes">00</div>
+            <div class="countdown-label">Minutes</div>
+        </div>
+        <div class="countdown-item">
+            <div class="countdown-number" id="countdown-seconds">00</div>
+            <div class="countdown-label">Seconds</div>
+        </div>
+    </div>
+</div>
         </div>
     </section>
+
+    <!-- Add this section in candidate-portal.html after the vote statistics section -->
+<section style="margin: 40px 0;">
+    <div class="card" style="background: white; border-radius: 15px; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
+        <h3 style="color: #420942; margin-bottom: 20px;"><i class="fas fa-vote-yea"></i> Vote for this Candidate</h3>
+        
+        <div id="voting-info">
+            <p>Share this page with friends to get more votes!</p>
+            <button id="show-vote-btn" class="btn btn-primary" style="margin-top: 15px;">
+                <i class="fas fa-vote-yea"></i> Vote Now
+            </button>
+        </div>
+        
+        <div id="vote-success" style="display: none; background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin-top: 15px;">
+            <i class="fas fa-check-circle"></i> Thank you for voting! Your vote has been recorded.
+        </div>
+    </div>
+</section>
+
+<!-- Add Voting Modal (add before the closing body tag) -->
+<div id="candidate-vote-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Cast Your Vote</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="text-center mb-3">
+                <p>You are voting for:</p>
+                <h4 id="candidate-modal-name" style="color: #420942;"></h4>
+                <p id="candidate-modal-category" style="color: #6c757d;"></p>
+            </div>
+            
+            <form id="candidate-vote-form" onsubmit="event.preventDefault(); submitCandidateVote();">
+                <input type="hidden" id="candidate-modal-id">
+                
+                <div class="form-group">
+                    <label class="form-label" for="candidate-voter-name">
+                        <i class="fas fa-user"></i> Your Full Name *
+                    </label>
+                    <input type="text" id="candidate-voter-name" class="form-control" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="candidate-voter-email">
+                        <i class="fas fa-envelope"></i> Your Email Address *
+                    </label>
+                    <input type="email" id="candidate-voter-email" class="form-control" placeholder="student@nfonap.edu.cm" required>
+                    <div class="form-text">
+                        Your email will be used to verify your vote and prevent duplicate voting.
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <i class="fas fa-vote-yea"></i> Submit Vote
+                    </button>
+                </div>
+                
+                <div class="form-text text-center">
+                    By voting, you agree to the election rules and confirm that you are a registered NFONAP student.
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Toast Container (add before the closing body tag) -->
+<div id="candidate-toast-container" class="toast-container"></div>
 
     <!-- Main Content -->
     <section class="section">
@@ -654,169 +744,388 @@
         </div>
     </footer>
 
-    <script>
-        // Candidate Portal Script
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Candidate portal loaded');
-            
-            // Mobile menu toggle
-            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-            if (mobileMenuBtn) {
-                mobileMenuBtn.addEventListener('click', function() {
-                    const nav = document.querySelector('.nav');
-                    nav.classList.toggle('active');
-                });
-            }
-            
-            // Get candidate token from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const candidateToken = urlParams.get('token');
-            
-            if (!candidateToken) {
-                showError('No candidate token provided. Please use the link provided by the admin.');
-                return;
-            }
-            
-            // Load candidate data
-            loadCandidateData(candidateToken);
-            
-            // Set up auto-refresh every 30 seconds
-            setInterval(() => {
-                loadCandidateData(candidateToken);
-            }, 30000);
-        });
+<script>
+    // Candidate Portal Script
+    let currentCandidate = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Candidate portal loaded');
+        
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', function() {
+                const nav = document.querySelector('.nav');
+                nav.classList.toggle('active');
+            });
+        }
+        
+        // Get candidate token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const candidateToken = urlParams.get('token');
+        
+        if (!candidateToken) {
+            showError('No candidate token provided. Please use the link provided by the admin.');
+            return;
+        }
         
         // Load candidate data
-        function loadCandidateData(token) {
+        loadCandidateData(candidateToken);
+        
+        // Setup event listeners for voting
+        setupVotingEvents();
+        
+        // Set up auto-refresh every 30 seconds
+        setInterval(() => {
+            loadCandidateData(candidateToken);
+        }, 30000);
+        
+        // Initialize countdown timer
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    });
+    
+    // Setup voting event listeners
+    function setupVotingEvents() {
+        // Show vote modal
+        document.getElementById('show-vote-btn').addEventListener('click', showVoteModal);
+        
+        // Close modal buttons
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const modal = this.closest('.modal-overlay');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+        
+        // Close modal on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Show vote modal
+    function showVoteModal() {
+        if (!currentCandidate) return;
+        
+        // Set candidate info in modal
+        document.getElementById('candidate-modal-name').textContent = currentCandidate.name;
+        document.getElementById('candidate-modal-category').textContent = 
+            currentCandidate.category === 'miss' ? 'Miss NFONAP' : 'Master NFONAP';
+        document.getElementById('candidate-modal-id').value = currentCandidate.id;
+        
+        // Clear form
+        document.getElementById('candidate-voter-email').value = '';
+        document.getElementById('candidate-voter-name').value = '';
+        
+        // Show modal
+        document.getElementById('candidate-vote-modal').style.display = 'flex';
+    }
+    
+    // Submit vote from candidate portal
+    function submitCandidateVote() {
+        const candidateId = document.getElementById('candidate-modal-id').value;
+        const voterEmail = document.getElementById('candidate-voter-email').value.trim();
+        const voterName = document.getElementById('candidate-voter-name').value.trim();
+        
+        // Validation
+        if (!voterEmail || !voterName) {
+            showToast('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        // Check deadline
+        const deadline = new Date('December 13, 2025 13:00:00').getTime();
+        const now = new Date().getTime();
+        if (now >= deadline) {
+            showToast('Voting has ended! The deadline was December 13, 2025 at 1:00 PM.', 'error');
+            return;
+        }
+        
+        // Simple email validation
+        if (!voterEmail.includes('@') || !voterEmail.includes('.')) {
+            showToast('Please enter a valid email address', 'error');
+            return;
+        }
+        
+        try {
+            // Get candidates and voters from localStorage
             const candidates = JSON.parse(localStorage.getItem('nfonap_candidates') || '[]');
             const votes = JSON.parse(localStorage.getItem('nfonap_votes') || '[]');
             const voters = JSON.parse(localStorage.getItem('nfonap_voters') || '[]');
             
-            // Find candidate by token
-            const candidate = candidates.find(c => c.monitoringToken === token);
+            const candidate = candidates.find(c => c.id === candidateId);
             
             if (!candidate) {
-                showError('Candidate not found. Please check your monitoring link.');
+                showToast('Candidate not found!', 'error');
                 return;
             }
             
-            // Hide loading, show dashboard
-            document.getElementById('loading-section').style.display = 'none';
-            document.getElementById('candidate-dashboard').style.display = 'block';
-            document.getElementById('error-section').style.display = 'none';
-            
-            // Update candidate information
-            document.getElementById('candidate-name').textContent = candidate.name;
-            document.getElementById('candidate-category').textContent = candidate.category === 'miss' ? '👑 Miss NFONAP' : '👑 Master NFONAP';
-            document.getElementById('candidate-program').textContent = candidate.program;
-            document.getElementById('candidate-department').textContent = candidate.department;
-            document.getElementById('candidate-email').textContent = candidate.email || 'Not provided';
-            document.getElementById('candidate-phone').textContent = candidate.phone || 'Not provided';
-            document.getElementById('candidate-joined').textContent = candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString() : 'Recently';
-            document.getElementById('candidate-bio').textContent = candidate.bio || 'No biography available.';
-            document.getElementById('candidate-manifesto').textContent = candidate.manifesto || 'No manifesto available.';
-            
-            // Set candidate photo
-            const photoElement = document.getElementById('candidate-photo');
-            if (candidate.photo && candidate.photo.startsWith('data:image')) {
-                photoElement.src = candidate.photo;
-            } else if (candidate.photo) {
-                photoElement.src = candidate.photo;
-            } else {
-                photoElement.src = 'assets/default-avatar.jpg';
+            // Check if already voted
+            const hasVoted = voters.some(v => v.email === voterEmail);
+            if (hasVoted) {
+                showToast('You have already voted! Each person can only vote once.', 'error');
+                return;
             }
             
-            // Calculate vote statistics
-            const candidateVotes = votes.filter(v => v.candidateId === candidate.id);
-            const totalVotes = votes.length;
-            const votePercentage = totalVotes > 0 ? ((candidateVotes.length / totalVotes) * 100).toFixed(1) : 0;
+            // Create vote record
+            const vote = {
+                id: 'vote-' + Date.now(),
+                candidateId,
+                candidateName: candidate.name,
+                category: candidate.category,
+                voterEmail,
+                voterName,
+                timestamp: new Date().toISOString()
+            };
             
-            // Calculate rank among candidates in same category
-            const categoryCandidates = candidates.filter(c => c.category === candidate.category);
-            const candidateRanks = categoryCandidates.map(c => {
-                const votesCount = votes.filter(v => v.candidateId === c.id).length;
-                return { id: c.id, name: c.name, votes: votesCount };
-            }).sort((a, b) => b.votes - a.votes);
+            // Save vote
+            votes.push(vote);
+            localStorage.setItem('nfonap_votes', JSON.stringify(votes));
             
-            const rank = candidateRanks.findIndex(r => r.id === candidate.id) + 1;
-            const totalCandidatesInCategory = categoryCandidates.length;
+            // Save voter
+            voters.push({
+                email: voterEmail,
+                name: voterName,
+                votedAt: new Date().toISOString(),
+                candidateId: candidateId
+            });
+            localStorage.setItem('nfonap_voters', JSON.stringify(voters));
             
-            // Update statistics
-            document.getElementById('total-votes').textContent = candidateVotes.length;
-            document.getElementById('vote-percentage').textContent = votePercentage + '%';
-            document.getElementById('rank').textContent = '#' + rank + ' of ' + totalCandidatesInCategory;
+            // Show success message
+            showToast(`Thank you for voting for ${candidate.name}!`, 'success');
             
-            // Update progress bar
-            const maxVotesInCategory = Math.max(...candidateRanks.map(r => r.votes));
-            const progressPercentage = maxVotesInCategory > 0 ? (candidateVotes.length / maxVotesInCategory * 100).toFixed(0) : 0;
-            document.getElementById('progress-bar').style.width = progressPercentage + '%';
-            document.getElementById('progress-text').textContent = `${candidateVotes.length} votes (${progressPercentage}% of category leader)`;
+            // Show success message in page
+            document.getElementById('vote-success').style.display = 'block';
+            document.getElementById('voting-info').style.display = 'none';
             
-            // Update vote history
-            const voteHistoryElement = document.getElementById('vote-history');
-            if (candidateVotes.length === 0) {
-                voteHistoryElement.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No votes yet. Be the first to vote!</p>';
-            } else {
-                let historyHTML = '';
-                const recentVotes = candidateVotes.slice(-10).reverse(); // Show last 10 votes
+            // Close modal
+            document.getElementById('candidate-vote-modal').style.display = 'none';
+            
+            // Refresh candidate data to update vote count
+            setTimeout(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const candidateToken = urlParams.get('token');
+                loadCandidateData(candidateToken);
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Error submitting vote:', error);
+            showToast('An error occurred while submitting your vote. Please try again.', 'error');
+        }
+    }
+    
+    // Load candidate data
+    function loadCandidateData(token) {
+        const candidates = JSON.parse(localStorage.getItem('nfonap_candidates') || '[]');
+        const votes = JSON.parse(localStorage.getItem('nfonap_votes') || '[]');
+        const voters = JSON.parse(localStorage.getItem('nfonap_voters') || '[]');
+        
+        // Find candidate by token
+        const candidate = candidates.find(c => c.monitoringToken === token);
+        
+        if (!candidate) {
+            showError('Candidate not found. Please check your monitoring link.');
+            return;
+        }
+        
+        currentCandidate = candidate;
+        
+        // Hide loading, show dashboard
+        document.getElementById('loading-section').style.display = 'none';
+        document.getElementById('candidate-dashboard').style.display = 'block';
+        document.getElementById('error-section').style.display = 'none';
+        
+        // Update candidate information
+        document.getElementById('candidate-name').textContent = candidate.name;
+        document.getElementById('candidate-category').textContent = candidate.category === 'miss' ? '👑 Miss NFONAP' : '👑 Master NFONAP';
+        document.getElementById('candidate-program').textContent = candidate.program;
+        document.getElementById('candidate-department').textContent = candidate.department;
+        document.getElementById('candidate-email').textContent = candidate.email || 'Not provided';
+        document.getElementById('candidate-phone').textContent = candidate.phone || 'Not provided';
+        document.getElementById('candidate-joined').textContent = candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString() : 'Recently';
+        document.getElementById('candidate-bio').textContent = candidate.bio || 'No biography available.';
+        document.getElementById('candidate-manifesto').textContent = candidate.manifesto || 'No manifesto available.';
+        
+        // Set candidate photo
+        const photoElement = document.getElementById('candidate-photo');
+        if (candidate.photo && candidate.photo.startsWith('data:image')) {
+            photoElement.src = candidate.photo;
+        } else if (candidate.photo) {
+            photoElement.src = candidate.photo;
+        } else {
+            photoElement.src = 'assets/default-avatar.jpg';
+        }
+        
+        // Calculate vote statistics
+        const candidateVotes = votes.filter(v => v.candidateId === candidate.id);
+        const totalVotes = votes.length;
+        const votePercentage = totalVotes > 0 ? ((candidateVotes.length / totalVotes) * 100).toFixed(1) : 0;
+        
+        // Calculate rank among candidates in same category
+        const categoryCandidates = candidates.filter(c => c.category === candidate.category);
+        const candidateRanks = categoryCandidates.map(c => {
+            const votesCount = votes.filter(v => v.candidateId === c.id).length;
+            return { id: c.id, name: c.name, votes: votesCount };
+        }).sort((a, b) => b.votes - a.votes);
+        
+        const rank = candidateRanks.findIndex(r => r.id === candidate.id) + 1;
+        const totalCandidatesInCategory = categoryCandidates.length;
+        
+        // Update statistics
+        document.getElementById('total-votes').textContent = candidateVotes.length;
+        document.getElementById('vote-percentage').textContent = votePercentage + '%';
+        document.getElementById('rank').textContent = '#' + rank + ' of ' + totalCandidatesInCategory;
+        
+        // Update progress bar
+        const maxVotesInCategory = Math.max(...candidateRanks.map(r => r.votes), 1);
+        const progressPercentage = maxVotesInCategory > 0 ? (candidateVotes.length / maxVotesInCategory * 100).toFixed(0) : 0;
+        document.getElementById('progress-bar').style.width = progressPercentage + '%';
+        document.getElementById('progress-text').textContent = `${candidateVotes.length} votes (${progressPercentage}% of category leader)`;
+        
+        // Update vote history
+        const voteHistoryElement = document.getElementById('vote-history');
+        if (candidateVotes.length === 0) {
+            voteHistoryElement.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No votes yet. Be the first to vote!</p>';
+        } else {
+            let historyHTML = '';
+            const recentVotes = candidateVotes.slice(-10).reverse();
+            
+            recentVotes.forEach(vote => {
+                const timeAgo = getTimeAgo(vote.timestamp);
+                const voterInitials = getInitials(vote.voterName);
                 
-                recentVotes.forEach(vote => {
-                    const timeAgo = getTimeAgo(vote.timestamp);
-                    const voterInitials = getInitials(vote.voterName);
-                    
-                    historyHTML += `
-                        <div class="vote-item">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong>${vote.voterName}</strong>
-                                    <div class="vote-time">${timeAgo}</div>
-                                </div>
-                                <div style="background: #420942; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                                    ${voterInitials}
-                                </div>
+                historyHTML += `
+                    <div class="vote-item">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${vote.voterName}</strong>
+                                <div class="vote-time">${timeAgo}</div>
+                            </div>
+                            <div style="background: #420942; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                ${voterInitials}
                             </div>
                         </div>
-                    `;
-                });
-                
-                voteHistoryElement.innerHTML = historyHTML;
+                    </div>
+                `;
+            });
+            
+            voteHistoryElement.innerHTML = historyHTML;
+        }
+        
+        // Update page title
+        document.title = `${candidate.name} - NFONAP Candidate Dashboard`;
+        
+        // Show voting section
+        document.getElementById('voting-info').style.display = 'block';
+        document.getElementById('vote-success').style.display = 'none';
+    }
+    
+    // Timer countdown function
+    function updateCountdown() {
+        // Set the deadline: December 13, 2025 at 1:00 PM
+        const deadline = new Date('December 13, 2025 13:00:00').getTime();
+        const now = new Date().getTime();
+        const timeLeft = deadline - now;
+        
+        // If deadline has passed
+        if (timeLeft < 0) {
+            // Hide vote button if voting has ended
+            const voteBtn = document.getElementById('show-vote-btn');
+            if (voteBtn) {
+                voteBtn.textContent = 'Voting Ended';
+                voteBtn.style.backgroundColor = '#6c757d';
+                voteBtn.style.cursor = 'not-allowed';
+                voteBtn.onclick = function(e) {
+                    e.preventDefault();
+                    showToast('Voting has ended! The deadline was December 13, 2025 at 1:00 PM.', 'error');
+                };
             }
-            
-            // Update page title
-            document.title = `${candidate.name} - NFONAP Candidate Dashboard`;
+            return;
         }
         
-        // Show error message
-        function showError(message) {
-            document.getElementById('loading-section').style.display = 'none';
-            document.getElementById('error-section').style.display = 'block';
-            document.getElementById('error-message').textContent = message;
-        }
+        // Calculate days, hours, minutes, seconds
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
         
-        // Helper function to get time ago
-        function getTimeAgo(timestamp) {
-            if (!timestamp) return 'Recently';
-            
-            const now = new Date();
-            const past = new Date(timestamp);
-            const diffMs = now - past;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-            
-            if (diffMins < 1) return 'Just now';
-            if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
-            if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-            if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
-            
-            return past.toLocaleDateString();
-        }
+        // Update the display if elements exist
+        const daysEl = document.getElementById('countdown-days');
+        const hoursEl = document.getElementById('countdown-hours');
+        const minutesEl = document.getElementById('countdown-minutes');
+        const secondsEl = document.getElementById('countdown-seconds');
         
-        // Helper function to get initials
-        function getInitials(name) {
-            if (!name) return '??';
-            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-        }
-    </script>
+        if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
+        if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
+        if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
+        if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
+    }
+    
+    // Show error message
+    function showError(message) {
+        document.getElementById('loading-section').style.display = 'none';
+        document.getElementById('error-section').style.display = 'block';
+        document.getElementById('error-message').textContent = message;
+    }
+    
+    // Toast notification system
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('candidate-toast-container');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-message">${message}</div>
+            <button class="toast-close">&times;</button>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+        
+        // Close button
+        toast.querySelector('.toast-close').onclick = () => {
+            toast.style.animation = 'fadeOut 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        };
+    }
+    
+    // Helper function to get time ago
+    function getTimeAgo(timestamp) {
+        if (!timestamp) return 'Recently';
+        
+        const now = new Date();
+        const past = new Date(timestamp);
+        const diffMs = now - past;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+        if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+        
+        return past.toLocaleDateString();
+    }
+    
+    // Helper function to get initials
+    function getInitials(name) {
+        if (!name) return '??';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+    }
+</script>
 </body>
 </html>
