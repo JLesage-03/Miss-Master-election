@@ -476,6 +476,53 @@
             resize: vertical;
         }
         
+        /* Photo Preview */
+        .photo-preview-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .photo-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #420942;
+            margin: 0 auto 10px;
+            display: block;
+        }
+        
+        .photo-upload-btn {
+            background: #6c757d;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+        }
+        
+        .photo-upload-btn:hover {
+            background: #5a6268;
+        }
+        
+        /* Monitoring Link Styles */
+        .monitoring-link-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #420942;
+        }
+        
+        .monitoring-link {
+            word-break: break-all;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .mobile-menu-btn {
@@ -647,6 +694,7 @@
                                 <thead>
                                     <tr>
                                         <th>Name</th>
+                                        <th>Photo</th>
                                         <th>Category</th>
                                         <th>Program</th>
                                         <th>Votes</th>
@@ -691,6 +739,16 @@
                 <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
+                <div class="photo-preview-container">
+                    <img id="add-photo-preview" src="assets/default-avatar.jpg" alt="Photo Preview" class="photo-preview">
+                    <div>
+                        <label for="candidate-photo-upload" class="photo-upload-btn">
+                            <i class="fas fa-camera"></i> Upload Photo
+                        </label>
+                        <input type="file" id="candidate-photo-upload" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+                
                 <form id="add-candidate-form">
                     <div class="form-group">
                         <label class="form-label">Category *</label>
@@ -722,6 +780,11 @@
                     </div>
                     
                     <div class="form-group">
+                        <label class="form-label">Phone (Optional)</label>
+                        <input type="tel" id="candidate-phone" class="form-control" placeholder="+237 6XX XXX XXX">
+                    </div>
+                    
+                    <div class="form-group">
                         <label class="form-label">Biography *</label>
                         <textarea id="candidate-bio" class="form-control" rows="3" placeholder="Candidate biography..." required></textarea>
                     </div>
@@ -730,7 +793,18 @@
                         <label class="form-label">Manifesto (Optional)</label>
                         <textarea id="candidate-manifesto" class="form-control" rows="3" placeholder="Candidate manifesto..."></textarea>
                     </div>
+                    
+                    <input type="hidden" id="candidate-photo-data" value="assets/default-avatar.jpg">
                 </form>
+                
+                <div class="monitoring-link-container" style="display: none;" id="add-monitoring-link-container">
+                    <h4><i class="fas fa-link"></i> Candidate Monitoring Link</h4>
+                    <p>Share this link with the candidate to monitor their progress:</p>
+                    <div class="monitoring-link" id="add-monitoring-link"></div>
+                    <button id="copy-add-link" class="btn btn-sm btn-primary">
+                        <i class="fas fa-copy"></i> Copy Link
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button id="cancel-add-btn" class="btn btn-secondary">Cancel</button>
@@ -747,8 +821,19 @@
                 <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
+                <div class="photo-preview-container">
+                    <img id="edit-photo-preview" src="assets/default-avatar.jpg" alt="Photo Preview" class="photo-preview">
+                    <div>
+                        <label for="edit-candidate-photo-upload" class="photo-upload-btn">
+                            <i class="fas fa-camera"></i> Change Photo
+                        </label>
+                        <input type="file" id="edit-candidate-photo-upload" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+                
                 <form id="edit-candidate-form">
                     <input type="hidden" id="edit-candidate-id">
+                    <input type="hidden" id="edit-candidate-monitoring-token">
                     
                     <div class="form-group">
                         <label class="form-label">Category *</label>
@@ -779,6 +864,11 @@
                     </div>
                     
                     <div class="form-group">
+                        <label class="form-label">Phone (Optional)</label>
+                        <input type="tel" id="edit-candidate-phone" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
                         <label class="form-label">Biography *</label>
                         <textarea id="edit-candidate-bio" class="form-control" rows="3" required></textarea>
                     </div>
@@ -787,7 +877,21 @@
                         <label class="form-label">Manifesto (Optional)</label>
                         <textarea id="edit-candidate-manifesto" class="form-control" rows="3"></textarea>
                     </div>
+                    
+                    <input type="hidden" id="edit-candidate-photo-data">
                 </form>
+                
+                <div class="monitoring-link-container" id="edit-monitoring-link-container">
+                    <h4><i class="fas fa-link"></i> Candidate Monitoring Link</h4>
+                    <p>Share this link with the candidate to monitor their progress:</p>
+                    <div class="monitoring-link" id="edit-monitoring-link"></div>
+                    <button id="copy-edit-link" class="btn btn-sm btn-primary">
+                        <i class="fas fa-copy"></i> Copy Link
+                    </button>
+                    <button id="reset-monitoring-token" class="btn btn-sm btn-warning" style="margin-left: 10px;">
+                        <i class="fas fa-sync"></i> Reset Link
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button id="cancel-edit-btn" class="btn btn-secondary">Cancel</button>
@@ -828,7 +932,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <script>
-        // Complete working admin script
+        // Complete working admin script with photo upload and monitoring links
         let currentFilter = 'all';
         let adminSession = null;
         let candidatesData = [];
@@ -871,8 +975,12 @@
                         program: 'Computer Science',
                         department: 'Faculty of Engineering',
                         email: 'amara.ndeze@nfonap.edu.cm',
+                        phone: '+237 655 123 456',
                         bio: 'Passionate about technology and community development.',
-                        manifesto: 'Dedicated to improving campus technology infrastructure.'
+                        manifesto: 'Dedicated to improving campus technology infrastructure.',
+                        photo: 'assets/default-avatar.jpg',
+                        monitoringToken: 'nfonap_miss_1',
+                        createdAt: new Date().toISOString()
                     },
                     {
                         id: '2',
@@ -881,8 +989,12 @@
                         program: 'Business Administration',
                         department: 'Faculty of Business',
                         email: 'christelle.tanyi@nfonap.edu.cm',
+                        phone: '+237 677 987 654',
                         bio: 'Entrepreneur and business enthusiast.',
-                        manifesto: 'Committed to promoting entrepreneurship.'
+                        manifesto: 'Committed to promoting entrepreneurship.',
+                        photo: 'assets/default-avatar.jpg',
+                        monitoringToken: 'nfonap_miss_2',
+                        createdAt: new Date().toISOString()
                     },
                     {
                         id: '3',
@@ -891,8 +1003,12 @@
                         program: 'Software Engineering',
                         department: 'Faculty of Engineering',
                         email: 'david.ngufor@nfonap.edu.cm',
+                        phone: '+237 699 456 789',
                         bio: 'Tech leader with experience in software development.',
-                        manifesto: 'Working towards digital transformation.'
+                        manifesto: 'Working towards digital transformation.',
+                        photo: 'assets/default-avatar.jpg',
+                        monitoringToken: 'nfonap_master_1',
+                        createdAt: new Date().toISOString()
                     },
                     {
                         id: '4',
@@ -901,8 +1017,12 @@
                         program: 'Finance',
                         department: 'Faculty of Business',
                         email: 'benjamin.nkwa@nfonap.edu.cm',
+                        phone: '+237 688 321 987',
                         bio: 'Economics scholar focused on development.',
-                        manifesto: 'Advocating for economic growth.'
+                        manifesto: 'Advocating for economic growth.',
+                        photo: 'assets/default-avatar.jpg',
+                        monitoringToken: 'nfonap_master_2',
+                        createdAt: new Date().toISOString()
                     }
                 ];
                 
@@ -912,6 +1032,11 @@
                 // Initialize votes if not exists
                 if (!localStorage.getItem('nfonap_votes')) {
                     localStorage.setItem('nfonap_votes', JSON.stringify([]));
+                }
+                
+                // Initialize voters if not exists
+                if (!localStorage.getItem('nfonap_voters')) {
+                    localStorage.setItem('nfonap_voters', JSON.stringify([]));
                 }
                 
                 // Initialize admin password if not exists
@@ -976,6 +1101,25 @@
                 addCandidateBtn.addEventListener('click', function() {
                     showModal('add-candidate-modal');
                     document.getElementById('add-candidate-form').reset();
+                    document.getElementById('add-photo-preview').src = 'assets/default-avatar.jpg';
+                    document.getElementById('candidate-photo-data').value = 'assets/default-avatar.jpg';
+                    document.getElementById('add-monitoring-link-container').style.display = 'none';
+                });
+            }
+            
+            // Photo upload for add candidate
+            const addPhotoUpload = document.getElementById('candidate-photo-upload');
+            if (addPhotoUpload) {
+                addPhotoUpload.addEventListener('change', function(e) {
+                    handlePhotoUpload(e, 'add-photo-preview', 'candidate-photo-data');
+                });
+            }
+            
+            // Photo upload for edit candidate
+            const editPhotoUpload = document.getElementById('edit-candidate-photo-upload');
+            if (editPhotoUpload) {
+                editPhotoUpload.addEventListener('change', function(e) {
+                    handlePhotoUpload(e, 'edit-photo-preview', 'edit-candidate-photo-data');
                 });
             }
             
@@ -1005,6 +1149,30 @@
             const submitEditBtn = document.getElementById('submit-edit-btn');
             if (submitEditBtn) {
                 submitEditBtn.addEventListener('click', updateCandidate);
+            }
+            
+            // Copy add monitoring link
+            const copyAddLinkBtn = document.getElementById('copy-add-link');
+            if (copyAddLinkBtn) {
+                copyAddLinkBtn.addEventListener('click', function() {
+                    const link = document.getElementById('add-monitoring-link').textContent;
+                    copyToClipboard(link);
+                });
+            }
+            
+            // Copy edit monitoring link
+            const copyEditLinkBtn = document.getElementById('copy-edit-link');
+            if (copyEditLinkBtn) {
+                copyEditLinkBtn.addEventListener('click', function() {
+                    const link = document.getElementById('edit-monitoring-link').textContent;
+                    copyToClipboard(link);
+                });
+            }
+            
+            // Reset monitoring token
+            const resetTokenBtn = document.getElementById('reset-monitoring-token');
+            if (resetTokenBtn) {
+                resetTokenBtn.addEventListener('click', resetMonitoringToken);
             }
             
             // Filter buttons
@@ -1074,6 +1242,33 @@
             console.log('All event listeners set up');
         }
 
+        // Handle photo upload
+        function handlePhotoUpload(event, previewId, dataInputId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                showToast('Please select an image file', 'error');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                showToast('Image size should be less than 5MB', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById(previewId);
+                const dataInput = document.getElementById(dataInputId);
+                
+                preview.src = e.target.result;
+                dataInput.value = e.target.result; // Store base64 data
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
         // Show/hide modal functions
         function showModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -1087,6 +1282,40 @@
             if (modal) {
                 modal.style.display = 'none';
             }
+        }
+
+        // Generate monitoring token
+        function generateMonitoringToken() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let token = '';
+            for (let i = 0; i < 16; i++) {
+                token += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return 'nfonap_' + token;
+        }
+
+        // Generate monitoring link
+        function generateMonitoringLink(token) {
+            const currentUrl = window.location.href;
+            const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1);
+            return `${baseUrl}candidate-portal.html?token=${token}`;
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Link copied to clipboard!', 'success');
+            }, function(err) {
+                console.error('Failed to copy: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Link copied to clipboard!', 'success');
+            });
         }
 
         // Login function
@@ -1199,7 +1428,7 @@
             }
             
             if (candidates.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #666;">No candidates found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #666;">No candidates found</td></tr>';
                 return;
             }
             
@@ -1208,16 +1437,24 @@
             candidates.forEach(candidate => {
                 const voteCount = votes.filter(v => v.candidateId === candidate.id).length;
                 const categoryLabel = candidate.category === 'miss' ? '👩 Miss' : '👨 Master';
+                const photoUrl = candidate.photo || 'assets/default-avatar.jpg';
                 
                 html += `
                     <tr data-id="${candidate.id}">
                         <td><strong>${candidate.name}</strong></td>
+                        <td>
+                            <img src="${photoUrl}" alt="${candidate.name}" 
+                                 style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;">
+                        </td>
                         <td>${categoryLabel}</td>
                         <td>${candidate.program}</td>
                         <td><strong>${voteCount}</strong></td>
                         <td>
                             <button class="btn btn-sm btn-info edit-candidate-btn" style="margin-right: 5px;">
                                 <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-warning monitoring-link-btn" style="margin-right: 5px;">
+                                <i class="fas fa-link"></i> Link
                             </button>
                             <button class="btn btn-sm btn-danger delete-candidate-btn">
                                 <i class="fas fa-trash"></i> Delete
@@ -1229,11 +1466,18 @@
             
             tbody.innerHTML = html;
             
-            // Add event listeners to edit and delete buttons
+            // Add event listeners to buttons
             document.querySelectorAll('.edit-candidate-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const candidateId = this.closest('tr').dataset.id;
                     editCandidate(candidateId);
+                });
+            });
+            
+            document.querySelectorAll('.monitoring-link-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const candidateId = this.closest('tr').dataset.id;
+                    showCandidateMonitoringLink(candidateId);
                 });
             });
             
@@ -1266,8 +1510,10 @@
             const program = document.getElementById('candidate-program').value.trim();
             const department = document.getElementById('candidate-department').value.trim();
             const email = document.getElementById('candidate-email').value.trim();
+            const phone = document.getElementById('candidate-phone').value.trim();
             const bio = document.getElementById('candidate-bio').value.trim();
             const manifesto = document.getElementById('candidate-manifesto').value.trim();
+            const photo = document.getElementById('candidate-photo-data').value;
 
             if (!category || !name || !program || !department || !bio) {
                 showToast('Please fill in all required fields', 'warning');
@@ -1275,6 +1521,7 @@
             }
 
             const candidates = getCandidates();
+            const monitoringToken = generateMonitoringToken();
             const candidate = {
                 id: Date.now().toString(),
                 category,
@@ -1282,17 +1529,28 @@
                 program,
                 department,
                 email,
+                phone,
                 bio,
                 manifesto,
+                photo: photo || 'assets/default-avatar.jpg',
+                monitoringToken,
                 createdAt: new Date().toISOString()
             };
 
             candidates.push(candidate);
             saveCandidates(candidates);
             
-            hideModal('add-candidate-modal');
-            refreshDashboard();
-            showToast('Candidate added successfully!', 'success');
+            // Show monitoring link
+            const monitoringLink = generateMonitoringLink(monitoringToken);
+            document.getElementById('add-monitoring-link').textContent = monitoringLink;
+            document.getElementById('add-monitoring-link-container').style.display = 'block';
+            
+            showToast('Candidate added successfully! Monitoring link generated.', 'success');
+            
+            // Refresh table after a delay
+            setTimeout(() => {
+                refreshDashboard();
+            }, 2000);
         }
 
         function editCandidate(candidateId) {
@@ -1305,26 +1563,78 @@
             }
 
             document.getElementById('edit-candidate-id').value = candidate.id;
+            document.getElementById('edit-candidate-monitoring-token').value = candidate.monitoringToken || generateMonitoringToken();
             document.getElementById('edit-candidate-category').value = candidate.category;
             document.getElementById('edit-candidate-name').value = candidate.name;
             document.getElementById('edit-candidate-program').value = candidate.program;
             document.getElementById('edit-candidate-department').value = candidate.department;
             document.getElementById('edit-candidate-email').value = candidate.email || '';
+            document.getElementById('edit-candidate-phone').value = candidate.phone || '';
             document.getElementById('edit-candidate-bio').value = candidate.bio;
             document.getElementById('edit-candidate-manifesto').value = candidate.manifesto || '';
-
+            document.getElementById('edit-candidate-photo-data').value = candidate.photo || 'assets/default-avatar.jpg';
+            
+            // Set photo preview
+            document.getElementById('edit-photo-preview').src = candidate.photo || 'assets/default-avatar.jpg';
+            
+            // Set monitoring link
+            const token = candidate.monitoringToken || document.getElementById('edit-candidate-monitoring-token').value;
+            const monitoringLink = generateMonitoringLink(token);
+            document.getElementById('edit-monitoring-link').textContent = monitoringLink;
+            
             showModal('edit-candidate-modal');
+        }
+
+        function showCandidateMonitoringLink(candidateId) {
+            const candidates = getCandidates();
+            const candidate = candidates.find(c => c.id === candidateId);
+            
+            if (!candidate) {
+                showToast('Candidate not found', 'error');
+                return;
+            }
+            
+            const token = candidate.monitoringToken;
+            if (!token) {
+                showToast('No monitoring token found for this candidate', 'warning');
+                return;
+            }
+            
+            const monitoringLink = generateMonitoringLink(token);
+            
+            // Create a temporary modal to show the link
+            const linkText = `Monitoring link for ${candidate.name}:\n\n${monitoringLink}\n\nClick OK to copy to clipboard.`;
+            
+            if (confirm(linkText)) {
+                copyToClipboard(monitoringLink);
+            }
+        }
+
+        function resetMonitoringToken() {
+            const candidateId = document.getElementById('edit-candidate-id').value;
+            if (!candidateId) return;
+            
+            const newToken = generateMonitoringToken();
+            document.getElementById('edit-candidate-monitoring-token').value = newToken;
+            
+            const monitoringLink = generateMonitoringLink(newToken);
+            document.getElementById('edit-monitoring-link').textContent = monitoringLink;
+            
+            showToast('Monitoring link has been reset', 'success');
         }
 
         function updateCandidate() {
             const candidateId = document.getElementById('edit-candidate-id').value;
+            const monitoringToken = document.getElementById('edit-candidate-monitoring-token').value;
             const category = document.getElementById('edit-candidate-category').value;
             const name = document.getElementById('edit-candidate-name').value.trim();
             const program = document.getElementById('edit-candidate-program').value.trim();
             const department = document.getElementById('edit-candidate-department').value.trim();
             const email = document.getElementById('edit-candidate-email').value.trim();
+            const phone = document.getElementById('edit-candidate-phone').value.trim();
             const bio = document.getElementById('edit-candidate-bio').value.trim();
             const manifesto = document.getElementById('edit-candidate-manifesto').value.trim();
+            const photo = document.getElementById('edit-candidate-photo-data').value;
 
             if (!category || !name || !program || !department || !bio) {
                 showToast('Please fill in all required fields', 'warning');
@@ -1341,13 +1651,16 @@
 
             candidates[candidateIndex] = {
                 ...candidates[candidateIndex],
+                monitoringToken,
                 category,
                 name,
                 program,
                 department,
                 email,
+                phone,
                 bio,
                 manifesto,
+                photo: photo || candidates[candidateIndex].photo,
                 updatedAt: new Date().toISOString()
             };
 
@@ -1391,17 +1704,20 @@
             const candidates = getCandidates();
             const votes = getVotes();
             
-            let csv = 'Name,Category,Program,Department,Email,Votes\n';
+            let csv = 'Name,Category,Program,Department,Email,Phone,Votes,Monitoring Link\n';
             
             candidates.forEach(candidate => {
                 const voteCount = votes.filter(v => v.candidateId === candidate.id).length;
+                const monitoringLink = generateMonitoringLink(candidate.monitoringToken || '');
                 const row = [
                     candidate.name,
                     candidate.category,
                     candidate.program,
                     candidate.department,
                     candidate.email || '',
-                    voteCount
+                    candidate.phone || '',
+                    voteCount,
+                    monitoringLink
                 ].map(val => `"${val}"`).join(',');
                 csv += row + '\n';
             });
