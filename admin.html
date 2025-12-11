@@ -1,413 +1,847 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - NFONAP Elections 2025</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="assets/nfonap-logo.jpg">
-</head>
-<body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <a href="index.html" class="logo">
-                <img src="assets/nfonap-logo.jpg" alt="NFONAP University" class="logo-img">
-                <div>
-                    <div class="logo-text">NFONAP UNIVERSITY</div>
-                    <div class="logo-tagline">Admin Dashboard</div>
-                </div>
-            </a>
-            
-            <nav class="nav">
-                <a href="index.html" class="nav-link">
-                    <i class="fas fa-home"></i> Home
-                </a>
-                <a href="miss.html" class="nav-link">
-                    <i class="fas fa-female"></i> Miss
-                </a>
-                <a href="master.html" class="nav-link">
-                    <i class="fas fa-male"></i> Master
-                </a>
-                <a href="admin.html" class="admin-badge" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                    <i class="fas fa-user-shield"></i> Admin
-                </a>
-                <button class="btn btn-danger btn-sm" onclick="logout()" id="logout-btn" style="display: none;">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+// ===== ADMIN DASHBOARD SCRIPT =====
+
+let db;
+let currentFilter = 'all';
+let adminSession = null;
+let countdownInterval = null;
+
+// Initialize admin dashboard
+document.addEventListener('DOMContentLoaded', () => {
+    // Load the database from main script
+    if (typeof Database === 'function') {
+        db = new Database();
+    } else {
+        // Fallback if Database class not loaded
+        console.error('Database class not found. Make sure script.js is loaded first.');
+        db = {
+            candidates: [],
+            votes: [],
+            voters: [],
+            settings: {
+                electionTitle: 'NFONAP Miss & Master Elections 2025',
+                votingDeadline: '2025-12-13T13:00:00',
+                allowVoting: true
+            },
+            loadData: function() {
+                // Load from localStorage
+                this.candidates = JSON.parse(localStorage.getItem('nfonap_candidates_v2') || '[]');
+                this.votes = JSON.parse(localStorage.getItem('nfonap_votes_v2') || '[]');
+                this.voters = JSON.parse(localStorage.getItem('nfonap_voters_v2') || '[]');
+                this.settings = JSON.parse(localStorage.getItem('nfonap_settings_v2') || JSON.stringify(this.settings));
+            },
+            saveData: function() {
+                localStorage.setItem('nfonap_candidates_v2', JSON.stringify(this.candidates));
+                localStorage.setItem('nfonap_votes_v2', JSON.stringify(this.votes));
+                localStorage.setItem('nfonap_voters_v2', JSON.stringify(this.voters));
+                localStorage.setItem('nfonap_settings_v2', JSON.stringify(this.settings));
+            },
+            getCandidates: function(category = null) {
+                if (category) {
+                    return this.candidates.filter(c => c.category === category && (!c.status || c.status === 'active'));
+                }
+                return this.candidates.filter(c => !c.status || c.status === 'active');
+            },
+            getCandidateById: function(id) {
+                return this.candidates.find(c => c.id === id);
+            }
+        };
+        db.loadData();
+    }
+    
+    // Check for existing data or initialize
+    if (db.candidates.length === 0) {
+        initializeDefaultData();
+    }
+    
+    checkAdminSession();
+    initializeEventListeners();
+    updateAdminCountdown(); // Start countdown
+});
+
+// Initialize default data for demo
+function initializeDefaultData() {
+    const defaultCandidates = [
+        {
+            id: 'candidate-1',
+            category: 'miss',
+            name: 'Amara Ndeze',
+            program: 'Computer Science',
+            department: 'Faculty of Engineering',
+            email: 'amara.ndeze@nfonap.edu.cm',
+            bio: 'Passionate about technology and community development. Active in student organizations.',
+            manifesto: 'Dedicated to improving campus technology infrastructure and fostering innovation.',
+            createdAt: new Date().toISOString()
+        },
+        {
+            id: 'candidate-2',
+            category: 'miss',
+            name: 'Christelle Tanyi',
+            program: 'Business Administration',
+            department: 'Faculty of Business',
+            email: 'christelle.tanyi@nfonap.edu.cm',
+            bio: 'Entrepreneur and business enthusiast with a focus on sustainable development.',
+            manifesto: 'Committed to promoting entrepreneurship and supporting student businesses.',
+            createdAt: new Date().toISOString()
+        },
+        {
+            id: 'candidate-3',
+            category: 'master',
+            name: 'David Ngufor',
+            program: 'Software Engineering',
+            department: 'Faculty of Engineering',
+            email: 'david.ngufor@nfonap.edu.cm',
+            bio: 'Tech leader with experience in software development and project management.',
+            manifesto: 'Working towards digital transformation and excellence in academic excellence.',
+            createdAt: new Date().toISOString()
+        },
+        {
+            id: 'candidate-4',
+            category: 'master',
+            name: 'Benjamin Nkwa',
+            program: 'Finance',
+            department: 'Faculty of Business',
+            email: 'benjamin.nkwa@nfonap.edu.cm',
+            bio: 'Economics scholar focused on development and financial inclusion.',
+            manifesto: 'Advocating for economic growth and student welfare improvement.',
+            createdAt: new Date().toISOString()
+        }
+    ];
+
+    db.candidates = defaultCandidates;
+    db.saveData();
+    
+    // Also save default settings
+    const CONFIG = {
+        ADMIN_CREDENTIALS: {
+            username: 'admin',
+            password: 'nfonap2025'
+        },
+        VOTING_DEADLINE: new Date('December 13, 2025 13:00:00')
+    };
+    
+    // Store default admin password if not exists
+    if (!localStorage.getItem('adminPassword')) {
+        localStorage.setItem('adminPassword', CONFIG.ADMIN_CREDENTIALS.password);
+    }
+}
+
+// Check if admin is logged in
+function checkAdminSession() {
+    const session = sessionStorage.getItem('adminSession');
+    if (session) {
+        adminSession = JSON.parse(session);
+        showDashboard();
+    } else {
+        showLoginForm();
+    }
+}
+
+// Initialize event listeners
+function initializeEventListeners() {
+    // Modal close buttons
+    document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modal = e.target.closest('.modal-overlay');
+            modal.style.display = 'none';
+        });
+    });
+
+    // Click outside modal to close
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+
+    // Mobile menu
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    }
+    
+    // Allow Enter key to submit login
+    document.getElementById('admin-password')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+}
+
+// ===== LOGIN FUNCTIONS =====
+function login() {
+    const username = document.getElementById('admin-username').value.trim();
+    const password = document.getElementById('admin-password').value.trim();
+
+    if (!username || !password) {
+        Toast.show('Please enter username and password', 'warning');
+        return;
+    }
+
+    // Get stored password or use default
+    let storedPassword = localStorage.getItem('adminPassword');
+    if (!storedPassword) {
+        storedPassword = 'nfonap2025'; // Default password
+        localStorage.setItem('adminPassword', storedPassword);
+    }
+    
+    // Check credentials
+    if (username === 'admin' && password === storedPassword) {
+        adminSession = {
+            username: username,
+            loginTime: new Date().toISOString(),
+            lastActivity: new Date().toISOString()
+        };
+        sessionStorage.setItem('adminSession', JSON.stringify(adminSession));
+        
+        // Clear form
+        document.getElementById('admin-username').value = '';
+        document.getElementById('admin-password').value = '';
+        
+        showDashboard();
+        Toast.show('Login successful!', 'success');
+    } else {
+        Toast.show('Invalid username or password', 'error');
+    }
+}
+
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        sessionStorage.removeItem('adminSession');
+        adminSession = null;
+        showLoginForm();
+        Toast.show('Logged out successfully', 'info');
+    }
+}
+
+function showLoginForm() {
+    document.getElementById('login-section').style.display = 'block';
+    document.getElementById('dashboard-section').style.display = 'none';
+    document.getElementById('logout-btn').style.display = 'none';
+}
+
+function showDashboard() {
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('dashboard-section').style.display = 'block';
+    document.getElementById('logout-btn').style.display = 'inline-block';
+    
+    // Update welcome info
+    document.getElementById('admin-name').textContent = adminSession.username;
+    updateLastLoginTime();
+    
+    // Display deadline
+    const deadline = new Date(db.settings.votingDeadline || '2025-12-13T13:00:00');
+    document.getElementById('deadline-display').textContent = deadline.toLocaleString();
+    
+    // Load dashboard data
+    refreshDashboard();
+    
+    // Start countdown timer
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(updateAdminCountdown, 1000);
+}
+
+function updateLastLoginTime() {
+    const loginTime = new Date(adminSession.loginTime);
+    document.getElementById('last-login').textContent = loginTime.toLocaleString();
+}
+
+// ===== COUNTDOWN FUNCTIONS =====
+function updateAdminCountdown() {
+    const now = new Date();
+    const deadline = new Date(db.settings.votingDeadline || '2025-12-13T13:00:00');
+    const diff = deadline - now;
+    
+    if (diff <= 0) {
+        document.getElementById('admin-countdown-days').textContent = '00';
+        document.getElementById('admin-countdown-hours').textContent = '00';
+        document.getElementById('admin-countdown-minutes').textContent = '00';
+        document.getElementById('admin-countdown-seconds').textContent = '00';
+        return;
+    }
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    document.getElementById('admin-countdown-days').textContent = days.toString().padStart(2, '0');
+    document.getElementById('admin-countdown-hours').textContent = hours.toString().padStart(2, '0');
+    document.getElementById('admin-countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+    document.getElementById('admin-countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+}
+
+// ===== DASHBOARD FUNCTIONS =====
+function refreshDashboard() {
+    db.loadData();
+    updateStatistics();
+    loadCandidatesTable();
+    updateVotingStatus();
+}
+
+function updateStatistics() {
+    const totalCandidates = db.candidates.length;
+    const missCandidates = db.candidates.filter(c => c.category === 'miss').length;
+    const masterCandidates = db.candidates.filter(c => c.category === 'master').length;
+    const totalVotes = db.votes.length;
+    const totalVoters = db.voters.length;
+
+    document.getElementById('admin-total-candidates').textContent = totalCandidates;
+    document.getElementById('admin-total-votes').textContent = totalVotes;
+    document.getElementById('admin-miss-candidates').textContent = missCandidates;
+    document.getElementById('admin-master-candidates').textContent = masterCandidates;
+    document.getElementById('admin-total-voters').textContent = totalVoters;
+}
+
+function loadCandidatesTable() {
+    const container = document.getElementById('candidates-table');
+    let candidates = db.candidates;
+
+    // Filter candidates
+    if (currentFilter === 'miss') {
+        candidates = candidates.filter(c => c.category === 'miss');
+    } else if (currentFilter === 'master') {
+        candidates = candidates.filter(c => c.category === 'master');
+    }
+
+    if (candidates.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted" style="padding: 2rem;">No candidates found</p>';
+        return;
+    }
+
+    let html = '<table class="table" style="width: 100%; border-collapse: collapse;">';
+    html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
+    html += '<th style="padding: 1rem; text-align: left;">Name</th>';
+    html += '<th style="padding: 1rem; text-align: left;">Category</th>';
+    html += '<th style="padding: 1rem; text-align: left;">Program</th>';
+    html += '<th style="padding: 1rem; text-align: left;">Votes</th>';
+    html += '<th style="padding: 1rem; text-align: center;">Actions</th>';
+    html += '</tr></thead><tbody>';
+
+    candidates.forEach(candidate => {
+        const voteCount = db.votes.filter(v => v.candidateId === candidate.id).length;
+        const categoryLabel = candidate.category === 'miss' ? '👩 Miss' : '👨 Master';
+        
+        html += `<tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 1rem;"><strong>${candidate.name}</strong></td>
+            <td style="padding: 1rem;">${categoryLabel}</td>
+            <td style="padding: 1rem;">${candidate.program}</td>
+            <td style="padding: 1rem;"><strong>${voteCount}</strong></td>
+            <td style="padding: 1rem; text-align: center;">
+                <button class="btn btn-sm btn-info" onclick="editCandidate('${candidate.id}')">
+                    <i class="fas fa-edit"></i> Edit
                 </button>
-            </nav>
-            
-            <button class="mobile-menu-btn">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- Admin Dashboard -->
-    <section class="hero" style="padding-top: 120px; min-height: 100vh;">
-        <div class="container">
-            <!-- Login Section -->
-            <div id="login-section" class="text-center" style="max-width: 400px; margin: 0 auto; padding: 3rem;">
-                <h2 style="margin-bottom: 2rem;">Admin Login</h2>
-                <div class="form-group">
-                    <input type="text" id="admin-username" class="form-control" placeholder="Username" style="margin-bottom: 1rem;">
-                </div>
-                <div class="form-group">
-                    <input type="password" id="admin-password" class="form-control" placeholder="Password" style="margin-bottom: 1.5rem;">
-                </div>
-                <button class="btn btn-primary btn-full" onclick="login()">
-                    <i class="fas fa-sign-in-alt"></i> Login
+                <button class="btn btn-sm btn-danger" onclick="deleteCandidate('${candidate.id}')">
+                    <i class="fas fa-trash"></i> Delete
                 </button>
-                <div class="form-text text-center mt-3">
-                    <strong>Default:</strong> admin / nfonap2025<br>
-                    <small class="text-danger">Change password after first login!</small>
-                </div>
-                <div class="mt-3">
-                    <button class="btn btn-link" onclick="showPasswordModal()">
-                        <i class="fas fa-key"></i> Change Password
-                    </button>
-                </div>
-            </div>
+            </td>
+        </tr>`;
+    });
 
-            <!-- Dashboard Section -->
-            <div id="dashboard-section" style="display: none;">
-                <!-- Dashboard Header -->
-                <div class="d-flex justify-between align-center mb-4">
-                    <div>
-                        <h1 style="margin-bottom: 0.5rem;">Admin Dashboard</h1>
-                        <p>Welcome, <span id="admin-name">Admin</span> | Last login: <span id="last-login">Now</span></p>
-                        <div class="deadline-info mt-2">
-                            <i class="fas fa-clock"></i> Voting Deadline: 
-                            <span id="deadline-display">December 13, 2025 13:00:00</span>
-                            <button class="btn btn-sm btn-outline ml-2" onclick="showDeadlineModal()">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-1">
-                        <button class="btn btn-secondary" onclick="refreshDashboard()">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                        <button class="btn btn-accent" onclick="exportData()">
-                            <i class="fas fa-download"></i> Export
-                        </button>
-                        <button class="btn btn-primary" onclick="showAddCandidateModal()">
-                            <i class="fas fa-user-plus"></i> Add Candidate
-                        </button>
-                    </div>
-                </div>
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    
+    // Update filter buttons
+    updateFilterButtons();
+}
 
-                <!-- Countdown Timer -->
-                <div class="card mb-4" style="background: linear-gradient(135deg, #420942, #6a3a6a); color: white;">
-                    <div class="d-flex justify-between align-center">
-                        <div>
-                            <h3 style="margin: 0; color: white;">Voting Countdown</h3>
-                            <p style="margin: 0; opacity: 0.9;">Time remaining until voting ends</p>
-                        </div>
-                        <div class="countdown" style="display: flex; gap: 1rem;">
-                            <div class="countdown-item">
-                                <div class="countdown-number" id="admin-countdown-days">00</div>
-                                <div class="countdown-label">Days</div>
-                            </div>
-                            <div class="countdown-item">
-                                <div class="countdown-number" id="admin-countdown-hours">00</div>
-                                <div class="countdown-label">Hours</div>
-                            </div>
-                            <div class="countdown-item">
-                                <div class="countdown-number" id="admin-countdown-minutes">00</div>
-                                <div class="countdown-label">Minutes</div>
-                            </div>
-                            <div class="countdown-item">
-                                <div class="countdown-number" id="admin-countdown-seconds">00</div>
-                                <div class="countdown-label">Seconds</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+function updateFilterButtons() {
+    const buttons = document.querySelectorAll('#filter-buttons button');
+    buttons.forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+    });
+    
+    const activeBtn = Array.from(buttons).find(btn => 
+        btn.textContent.toLowerCase().includes(currentFilter)
+    );
+    if (activeBtn) {
+        activeBtn.classList.remove('btn-outline');
+        activeBtn.classList.add('btn-primary');
+    }
+}
 
-                <!-- Statistics -->
-                <div class="stats-grid mb-4">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-number" id="admin-total-candidates">0</div>
-                        <div class="stat-label">Total Candidates</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-vote-yea"></i>
-                        </div>
-                        <div class="stat-number" id="admin-total-votes">0</div>
-                        <div class="stat-label">Total Votes</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-female"></i>
-                        </div>
-                        <div class="stat-number" id="admin-miss-candidates">0</div>
-                        <div class="stat-label">Miss Candidates</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-male"></i>
-                        </div>
-                        <div class="stat-number" id="admin-master-candidates">0</div>
-                        <div class="stat-label">Master Candidates</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-user-check"></i>
-                        </div>
-                        <div class="stat-number" id="admin-total-voters">0</div>
-                        <div class="stat-label">Total Voters</div>
-                    </div>
-                </div>
+function filterCandidates(filter) {
+    currentFilter = filter;
+    loadCandidatesTable();
+}
 
-                <!-- Candidates Management -->
-                <div class="card" style="background: white; border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
-                    <div class="d-flex justify-between align-center mb-3">
-                        <h3 style="margin: 0;">Manage Candidates</h3>
-                        <div class="d-flex gap-1" id="filter-buttons">
-                            <button class="btn btn-sm btn-primary" onclick="filterCandidates('all')">All</button>
-                            <button class="btn btn-sm btn-outline" onclick="filterCandidates('miss')">Miss</button>
-                            <button class="btn btn-sm btn-outline" onclick="filterCandidates('master')">Master</button>
-                        </div>
-                    </div>
-                    
-                    <div id="candidates-table">
-                        <!-- Candidates will be loaded here -->
-                    </div>
-                </div>
+// ===== CANDIDATE MANAGEMENT =====
+function showAddCandidateModal() {
+    document.getElementById('add-candidate-modal').style.display = 'flex';
+    document.getElementById('add-candidate-form').reset();
+}
 
-                <!-- Database Management -->
-                <div class="card" style="background: white; border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
-                    <h3 style="margin-bottom: 1.5rem;">Database Management</h3>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-secondary" onclick="backupDatabase()">
-                            <i class="fas fa-database"></i> Backup Database
-                        </button>
-                        <button class="btn btn-secondary" onclick="restoreDatabase()">
-                            <i class="fas fa-upload"></i> Restore Database
-                        </button>
-                        <button class="btn btn-danger" onclick="resetDatabase()">
-                            <i class="fas fa-trash"></i> Reset Database
-                        </button>
-                        <button class="btn btn-warning" onclick="showPasswordModal()">
-                            <i class="fas fa-key"></i> Change Password
-                        </button>
-                    </div>
-                </div>
+function closeAddCandidateModal() {
+    document.getElementById('add-candidate-modal').style.display = 'none';
+}
 
-                <!-- System Controls -->
-                <div class="card" style="background: white; border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-md);">
-                    <h3 style="margin-bottom: 1.5rem;">System Controls</h3>
-                    <div class="d-flex gap-2 align-center">
-                        <div>
-                            <strong>Voting Status:</strong>
-                            <span id="voting-status" class="badge badge-success">Active</span>
-                        </div>
-                        <button class="btn btn-sm btn-outline" onclick="toggleVotingStatus()" id="toggle-voting-btn">
-                            <i class="fas fa-pause"></i> Pause Voting
-                        </button>
-                        <button class="btn btn-sm btn-outline" onclick="clearAllVotes()">
-                            <i class="fas fa-eraser"></i> Clear All Votes
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+function addCandidate() {
+    const category = document.getElementById('candidate-category').value;
+    const name = document.getElementById('candidate-name').value.trim();
+    const program = document.getElementById('candidate-program').value.trim();
+    const department = document.getElementById('candidate-department').value.trim();
+    const email = document.getElementById('candidate-email').value.trim();
+    const bio = document.getElementById('candidate-bio').value.trim();
+    const manifesto = document.getElementById('candidate-manifesto').value.trim();
+    const photo = document.getElementById('candidate-photo').value.trim();
 
-    <!-- Add Candidate Modal -->
-    <div id="add-candidate-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3>Add New Candidate</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="add-candidate-form" onsubmit="event.preventDefault(); addCandidate();">
-                    <div class="d-flex gap-2 mb-3">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Category *</label>
-                            <select id="candidate-category" class="form-control" required>
-                                <option value="">Select Category</option>
-                                <option value="miss">Miss NFONAP</option>
-                                <option value="master">Master NFONAP</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex: 2;">
-                            <label class="form-label">Full Name *</label>
-                            <input type="text" id="candidate-name" class="form-control" placeholder="John Doe" required>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex gap-2 mb-3">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Program *</label>
-                            <input type="text" id="candidate-program" class="form-control" placeholder="Computer Science" required>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Department *</label>
-                            <input type="text" id="candidate-department" class="form-control" placeholder="Faculty of Engineering" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label class="form-label">Email (Optional)</label>
-                        <input type="email" id="candidate-email" class="form-control" placeholder="candidate@nfonap.edu.cm">
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label class="form-label">Biography *</label>
-                        <textarea id="candidate-bio" class="form-control" rows="3" placeholder="Candidate biography..." required></textarea>
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label class="form-label">Manifesto (Optional)</label>
-                        <textarea id="candidate-manifesto" class="form-control" rows="3" placeholder="Candidate manifesto..."></textarea>
-                    </div>
+    // Validation
+    if (!category || !name || !program || !department || !bio) {
+        Toast.show('Please fill in all required fields', 'warning');
+        return;
+    }
 
-                    <div class="form-group mb-3">
-                        <label class="form-label">Photo URL (Optional)</label>
-                        <input type="text" id="candidate-photo" class="form-control" placeholder="https://example.com/photo.jpg">
-                        <small class="form-text">Leave empty for default avatar</small>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeAddCandidateModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="addCandidate()">Add Candidate</button>
-            </div>
-        </div>
-    </div>
+    // Create candidate object
+    const candidate = {
+        id: 'candidate-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        category,
+        name,
+        program,
+        department,
+        email,
+        bio,
+        manifesto,
+        photo: photo || 'assets/default-avatar.jpg',
+        createdAt: new Date().toISOString(),
+        status: 'active'
+    };
 
-    <!-- Edit Candidate Modal -->
-    <div id="edit-candidate-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3>Edit Candidate</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="edit-candidate-form" onsubmit="event.preventDefault(); updateCandidate();">
-                    <input type="hidden" id="edit-candidate-id">
-                    
-                    <div class="d-flex gap-2 mb-3">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Category *</label>
-                            <select id="edit-candidate-category" class="form-control" required>
-                                <option value="miss">Miss NFONAP</option>
-                                <option value="master">Master NFONAP</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex: 2;">
-                            <label class="form-label">Full Name *</label>
-                            <input type="text" id="edit-candidate-name" class="form-control" required>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex gap-2 mb-3">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Program *</label>
-                            <input type="text" id="edit-candidate-program" class="form-control" required>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Department *</label>
-                            <input type="text" id="edit-candidate-department" class="form-control" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" id="edit-candidate-email" class="form-control">
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label class="form-label">Biography *</label>
-                        <textarea id="edit-candidate-bio" class="form-control" rows="3" required></textarea>
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label class="form-label">Manifesto</label>
-                        <textarea id="edit-candidate-manifesto" class="form-control" rows="3"></textarea>
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label class="form-label">Photo URL</label>
-                        <input type="text" id="edit-candidate-photo" class="form-control">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeEditCandidateModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="updateCandidate()">Update Candidate</button>
-            </div>
-        </div>
-    </div>
+    // Add to database
+    db.candidates.push(candidate);
+    db.saveData();
 
-    <!-- Password Change Modal -->
-    <div id="password-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3>Change Password</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group mb-3">
-                    <label class="form-label">Current Password *</label>
-                    <input type="password" id="current-password" class="form-control" required>
-                </div>
-                <div class="form-group mb-3">
-                    <label class="form-label">New Password *</label>
-                    <input type="password" id="new-password" class="form-control" required>
-                </div>
-                <div class="form-group mb-3">
-                    <label class="form-label">Confirm Password *</label>
-                    <input type="password" id="confirm-password" class="form-control" required>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
-            </div>
-        </div>
-    </div>
+    // Clear form and close modal
+    document.getElementById('add-candidate-form').reset();
+    closeAddCandidateModal();
 
-    <!-- Deadline Change Modal -->
-    <div id="deadline-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3>Change Voting Deadline</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group mb-3">
-                    <label class="form-label">New Deadline *</label>
-                    <input type="datetime-local" id="new-deadline" class="form-control" required>
-                </div>
-                <div class="form-text">
-                    <i class="fas fa-info-circle"></i> Changing the deadline will affect the countdown timer on all pages.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeDeadlineModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="updateDeadline()">Update Deadline</button>
-            </div>
-        </div>
-    </div>
+    // Refresh dashboard
+    refreshDashboard();
+    Toast.show('Candidate added successfully!', 'success');
+}
 
-    <!-- Toast Container -->
-    <div id="toast-container" class="toast-container"></div>
+function editCandidate(candidateId) {
+    const candidate = db.candidates.find(c => c.id === candidateId);
+    if (!candidate) {
+        Toast.show('Candidate not found', 'error');
+        return;
+    }
 
-    <script src="script.js"></script>
-    <script src="admin-script.js"></script>
-</body>
-</html>
+    // Fill form with candidate data
+    document.getElementById('edit-candidate-id').value = candidate.id;
+    document.getElementById('edit-candidate-category').value = candidate.category;
+    document.getElementById('edit-candidate-name').value = candidate.name;
+    document.getElementById('edit-candidate-program').value = candidate.program;
+    document.getElementById('edit-candidate-department').value = candidate.department;
+    document.getElementById('edit-candidate-email').value = candidate.email || '';
+    document.getElementById('edit-candidate-bio').value = candidate.bio;
+    document.getElementById('edit-candidate-manifesto').value = candidate.manifesto || '';
+    document.getElementById('edit-candidate-photo').value = candidate.photo || '';
+
+    // Show modal
+    document.getElementById('edit-candidate-modal').style.display = 'flex';
+}
+
+function closeEditCandidateModal() {
+    document.getElementById('edit-candidate-modal').style.display = 'none';
+}
+
+function updateCandidate() {
+    const candidateId = document.getElementById('edit-candidate-id').value;
+    const category = document.getElementById('edit-candidate-category').value;
+    const name = document.getElementById('edit-candidate-name').value.trim();
+    const program = document.getElementById('edit-candidate-program').value.trim();
+    const department = document.getElementById('edit-candidate-department').value.trim();
+    const email = document.getElementById('edit-candidate-email').value.trim();
+    const bio = document.getElementById('edit-candidate-bio').value.trim();
+    const manifesto = document.getElementById('edit-candidate-manifesto').value.trim();
+    const photo = document.getElementById('edit-candidate-photo').value.trim();
+
+    // Validation
+    if (!category || !name || !program || !department || !bio) {
+        Toast.show('Please fill in all required fields', 'warning');
+        return;
+    }
+
+    // Find and update candidate
+    const candidateIndex = db.candidates.findIndex(c => c.id === candidateId);
+    if (candidateIndex === -1) {
+        Toast.show('Candidate not found', 'error');
+        return;
+    }
+
+    db.candidates[candidateIndex] = {
+        ...db.candidates[candidateIndex],
+        category,
+        name,
+        program,
+        department,
+        email,
+        bio,
+        manifesto,
+        photo: photo || db.candidates[candidateIndex].photo,
+        updatedAt: new Date().toISOString()
+    };
+
+    db.saveData();
+    closeEditCandidateModal();
+    refreshDashboard();
+    Toast.show('Candidate updated successfully!', 'success');
+}
+
+function deleteCandidate(candidateId) {
+    if (!confirm('Are you sure you want to delete this candidate? This action cannot be undone.')) {
+        return;
+    }
+
+    // Find and remove candidate
+    const index = db.candidates.findIndex(c => c.id === candidateId);
+    if (index === -1) {
+        Toast.show('Candidate not found', 'error');
+        return;
+    }
+
+    // Also remove all votes for this candidate
+    db.votes = db.votes.filter(v => v.candidateId !== candidateId);
+
+    db.candidates.splice(index, 1);
+    db.saveData();
+
+    refreshDashboard();
+    Toast.show('Candidate deleted successfully!', 'success');
+}
+
+// ===== DATABASE MANAGEMENT =====
+function backupDatabase() {
+    db.loadData();
+    
+    const backup = {
+        timestamp: new Date().toISOString(),
+        candidates: db.candidates,
+        votes: db.votes,
+        voters: db.voters,
+        settings: db.settings
+    };
+
+    const dataStr = JSON.stringify(backup, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `nfonap-elections-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    Toast.show('Database backed up successfully!', 'success');
+}
+
+function restoreDatabase() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const backup = JSON.parse(event.target.result);
+                
+                // Validate backup structure
+                if (!backup.candidates || !backup.votes || !backup.voters || !backup.settings) {
+                    throw new Error('Invalid backup file format');
+                }
+
+                db.candidates = backup.candidates;
+                db.votes = backup.votes;
+                db.voters = backup.voters;
+                db.settings = backup.settings;
+                db.saveData();
+
+                refreshDashboard();
+                Toast.show('Database restored successfully!', 'success');
+            } catch (error) {
+                Toast.show('Error restoring database: ' + error.message, 'error');
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+function resetDatabase() {
+    const confirmed = confirm('⚠️ WARNING! This will permanently delete ALL data (candidates, votes, etc.). This action cannot be undone. Are you sure?');
+    
+    if (!confirmed) {
+        Toast.show('Reset cancelled', 'info');
+        return;
+    }
+
+    const finalConfirm = confirm('This is your LAST warning. Type "RESET" in the next prompt to confirm.');
+    
+    if (!finalConfirm) {
+        Toast.show('Reset cancelled', 'info');
+        return;
+    }
+
+    const userInput = prompt('Type "RESET" to confirm permanent data deletion:');
+    
+    if (userInput === 'RESET') {
+        db.candidates = [];
+        db.votes = [];
+        db.voters = [];
+        db.settings = {
+            electionTitle: 'NFONAP Miss & Master Elections 2025',
+            votingDeadline: '2025-12-13T13:00:00',
+            allowVoting: true
+        };
+        db.saveData();
+
+        refreshDashboard();
+        Toast.show('Database has been reset!', 'success');
+    } else {
+        Toast.show('Reset cancelled', 'info');
+    }
+}
+
+function clearAllVotes() {
+    if (!confirm('Are you sure you want to clear all votes? This will reset vote counts to zero.')) {
+        return;
+    }
+    
+    db.votes = [];
+    db.voters = [];
+    db.saveData();
+    
+    refreshDashboard();
+    Toast.show('All votes cleared successfully!', 'success');
+}
+
+// ===== EXPORT DATA =====
+function exportData() {
+    db.loadData();
+    
+    // Create CSV content
+    let csv = 'Name,Category,Program,Department,Email,Votes\n';
+    
+    db.candidates.forEach(candidate => {
+        const voteCount = db.votes.filter(v => v.candidateId === candidate.id).length;
+        const row = [
+            candidate.name,
+            candidate.category,
+            candidate.program,
+            candidate.department,
+            candidate.email || '',
+            voteCount
+        ].map(val => `"${val}"`).join(',');
+        csv += row + '\n';
+    });
+
+    const dataBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `nfonap-elections-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    Toast.show('Data exported successfully!', 'success');
+}
+
+// ===== PASSWORD MANAGEMENT =====
+function showPasswordModal() {
+    document.getElementById('password-modal').style.display = 'flex';
+    document.getElementById('current-password').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+}
+
+function closePasswordModal() {
+    document.getElementById('password-modal').style.display = 'none';
+}
+
+function changePassword() {
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        Toast.show('Please fill in all password fields', 'warning');
+        return;
+    }
+
+    let storedPassword = localStorage.getItem('adminPassword');
+    if (!storedPassword) {
+        storedPassword = 'nfonap2025'; // Default
+    }
+    
+    if (currentPassword !== storedPassword) {
+        Toast.show('Current password is incorrect', 'error');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        Toast.show('New passwords do not match', 'error');
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        Toast.show('New password must be at least 6 characters', 'warning');
+        return;
+    }
+
+    // Update password in localStorage
+    localStorage.setItem('adminPassword', newPassword);
+
+    // Clear form and close modal
+    closePasswordModal();
+
+    Toast.show('Password changed successfully!', 'success');
+}
+
+// ===== DEADLINE MANAGEMENT =====
+function showDeadlineModal() {
+    document.getElementById('deadline-modal').style.display = 'flex';
+    const deadline = new Date(db.settings.votingDeadline || '2025-12-13T13:00:00');
+    const localDateTime = deadline.toISOString().slice(0, 16);
+    document.getElementById('new-deadline').value = localDateTime;
+}
+
+function closeDeadlineModal() {
+    document.getElementById('deadline-modal').style.display = 'none';
+}
+
+function updateDeadline() {
+    const newDeadline = document.getElementById('new-deadline').value;
+    if (!newDeadline) {
+        Toast.show('Please select a new deadline', 'warning');
+        return;
+    }
+
+    const deadlineDate = new Date(newDeadline);
+    if (isNaN(deadlineDate.getTime())) {
+        Toast.show('Invalid date format', 'error');
+        return;
+    }
+
+    db.settings.votingDeadline = deadlineDate.toISOString();
+    db.saveData();
+    
+    closeDeadlineModal();
+    updateAdminCountdown();
+    document.getElementById('deadline-display').textContent = deadlineDate.toLocaleString();
+    Toast.show('Voting deadline updated successfully!', 'success');
+}
+
+// ===== VOTING STATUS MANAGEMENT =====
+function toggleVotingStatus() {
+    db.settings.allowVoting = !db.settings.allowVoting;
+    db.saveData();
+    updateVotingStatus();
+    
+    const status = db.settings.allowVoting ? 'enabled' : 'disabled';
+    Toast.show(`Voting has been ${status}`, 'success');
+}
+
+function updateVotingStatus() {
+    const statusEl = document.getElementById('voting-status');
+    const buttonEl = document.getElementById('toggle-voting-btn');
+    
+    if (db.settings.allowVoting) {
+        statusEl.textContent = 'Active';
+        statusEl.className = 'badge badge-success';
+        buttonEl.innerHTML = '<i class="fas fa-pause"></i> Pause Voting';
+    } else {
+        statusEl.textContent = 'Paused';
+        statusEl.className = 'badge badge-danger';
+        buttonEl.innerHTML = '<i class="fas fa-play"></i> Resume Voting';
+    }
+}
+
+// ===== UTILITY FUNCTIONS =====
+function toggleMobileMenu() {
+    const nav = document.querySelector('.nav');
+    nav.classList.toggle('active');
+}
+
+// Toast notification system
+class Toast {
+    static show(message, type = 'info', duration = 5000) {
+        const container = document.getElementById('toast-container') || this.createContainer();
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-icon">
+                ${this.getIcon(type)}
+            </div>
+            <div class="toast-message">${message}</div>
+            <button class="toast-close">&times;</button>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Auto remove after duration
+        setTimeout(() => this.remove(toast), duration);
+        
+        // Close button
+        toast.querySelector('.toast-close').onclick = () => this.remove(toast);
+    }
+    
+    static createContainer() {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+        return container;
+    }
+    
+    static getIcon(type) {
+        const icons = {
+            success: '✓',
+            error: '✗',
+            warning: '⚠',
+            info: 'ℹ'
+        };
+        return icons[type] || 'ℹ';
+    }
+    
+    static remove(toast) {
+        toast.style.animation = 'slideInRight 0.3s ease reverse forwards';
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.parentElement.removeChild(toast);
+            }
+        }, 300);
+    }
+}
+
+// Make functions available globally
+window.login = login;
+window.logout = logout;
+window.refreshDashboard = refreshDashboard;
+window.exportData = exportData;
+window.showAddCandidateModal = showAddCandidateModal;
+window.closeAddCandidateModal = closeAddCandidateModal;
+window.addCandidate = addCandidate;
+window.editCandidate = editCandidate;
+window.closeEditCandidateModal = closeEditCandidateModal;
+window.updateCandidate = updateCandidate;
+window.deleteCandidate = deleteCandidate;
+window.filterCandidates = filterCandidates;
+window.backupDatabase = backupDatabase;
+window.restoreDatabase = restoreDatabase;
+window.resetDatabase = resetDatabase;
+window.showPasswordModal = showPasswordModal;
+window.closePasswordModal = closePasswordModal;
+window.changePassword = changePassword;
+window.showDeadlineModal = showDeadlineModal;
+window.updateDeadline = updateDeadline;
+window.toggleVotingStatus = toggleVotingStatus;
+window.clearAllVotes = clearAllVotes;
+window.toggleMobileMenu = toggleMobileMenu;
