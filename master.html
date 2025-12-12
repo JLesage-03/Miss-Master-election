@@ -245,38 +245,190 @@
 
     <script src="script.js"></script>
     <script>
-        // Update Master NFONAP statistics
-        document.addEventListener('DOMContentLoaded', function() {
-            const db = window.db;
-            if (db) {
-                const masterCandidates = db.getCandidates('master');
-                const masterVotes = db.votes.filter(v => {
-                    const candidate = db.getCandidateById(v.candidateId);
-                    return candidate && candidate.category === 'master';
-                });
-                
-                // Calculate leading candidate votes
-                let leadingVotes = 0;
-                masterCandidates.forEach(candidate => {
-                    const votes = db.getCandidateVoteCount(candidate.id);
-                    if (votes > leadingVotes) leadingVotes = votes;
-                });
-                
-                // Update statistics
-                const totalCandidatesEl = document.getElementById('master-total-candidates');
-                const totalVotesEl = document.getElementById('master-total-votes');
-                const leadingVotesEl = document.getElementById('master-leading-votes');
-                const statusEl = document.getElementById('master-voting-status');
-                
-                if (totalCandidatesEl) totalCandidatesEl.textContent = masterCandidates.length;
-                if (totalVotesEl) totalVotesEl.textContent = masterVotes.length;
-                if (leadingVotesEl) leadingVotesEl.textContent = leadingVotes;
-                if (statusEl) {
-                    statusEl.textContent = db.isVotingOpen() ? 'Open' : 'Closed';
-                    statusEl.style.color = db.isVotingOpen() ? '#28a745' : '#dc3545';
-                }
-            }
+    // Update Master/Miss NFONAP statistics from Supabase
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Add Supabase
+        const supabaseScript = document.createElement('script');
+        supabaseScript.src = 'https://unpkg.com/@supabase/supabase-js@2';
+        document.head.appendChild(supabaseScript);
+        
+        await new Promise(resolve => {
+            supabaseScript.onload = resolve;
         });
-    </script>
+        
+        window.supabaseClient = window.supabase.createClient(
+            'YOUR_PROJECT_URL_HERE',
+            'YOUR_ANON_KEY_HERE'
+        );
+        
+        // Load candidates
+        await loadCandidatesFromSupabase();
+        
+        // Update statistics
+        await updateStatistics();
+        
+        // Start timer
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    });
+    
+    async function loadCandidatesFromSupabase() {
+        try {
+            // Get current page category
+            const category = window.location.pathname.includes('miss.html') ? 'miss' : 'master';
+            
+            const { data: candidates, error } = await supabaseClient
+                .from('candidates')
+                .select('*')
+                .eq('category', category)
+                .order('votes', { ascending: false });
+            
+            if (error) throw error;
+            
+            const container = document.getElementById('candidates-container');
+            
+            if (!candidates || candidates.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center" style="padding: 4rem;">
+                        <i class="fas fa-users" style="font-size: 4rem; color: #ddd; margin-bottom: 1rem;"></i>
+                        <h3 style="color: #666;">No ${category === 'miss' ? 'Miss' : 'Master'} Candidates Yet</h3>
+                        <p style="color: #666;">Candidates will appear here once they are added by the admin.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            for (const candidate of candidates) {
+                html += `
+                    <div class="candidate-card">
+                        <div class="candidate-image">
+                            <img src="${candidate.photo || 'assets/default-avatar.jpg'}" 
+                                 alt="${candidate.name}"
+                                 onerror="this.src='assets/default-avatar.jpg'">
+                            <div class="candidate-category">
+                                ${candidate.category === 'miss' ? '👑 Miss' : '👑 Master'}
+                            </div>
+                        </div>
+                        <div class="candidate-info">
+                            <h3 class="candidate-name">${candidate.name}</h3>
+                            <div class="candidate-program">
+                                <i class="fas fa-graduation-cap"></i> ${candidate.program}
+                            </div>
+                            <div class="candidate-department">
+                                <i class="fas fa-university"></i> ${candidate.department}
+                            </div>
+                            <p class="candidate-bio">${candidate.bio || 'No biography available.'}</p>
+                            
+                            <div class="candidate-stats">
+                                <div class="vote-count">
+                                    <i class="fas fa-vote-yea"></i> ${candidate.votes || 0} votes
+                                </div>
+                            </div>
+                            
+                            <button class="btn btn-primary vote-btn" 
+                                    onclick="showVoteModal('${candidate.id}', '${candidate.name}', '${candidate.category}')">
+                                <i class="fas fa-vote-yea"></i> Vote Now
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading candidates:', error);
+        }
+    }
+    
+    async function updateStatistics() {
+        try {
+            const category = window.location.pathname.includes('miss.html') ? 'miss' : 'master';
+            
+            // Get candidates count for this category
+            const { count: categoryCandidates, error: countError } = await supabaseClient
+                .from('candidates')
+                .select('*', { count: 'exact', head: true })
+                .eq('category', category);
+            
+            if (countError) throw countError;
+            
+            // Get votes for candidates in this category
+            const { data: categoryCandidatesData, error: candidatesError } = await supabaseClient
+                .from('candidates')
+                .select('id, votes')
+                .eq('category', category);
+            
+            if (candidatesError) throw candidatesError;
+            
+            // Calculate total votes for this category
+            let categoryVotes = 0;
+            let leadingVotes = 0;
+            
+            if (categoryCandidatesData) {
+                categoryVotes = categoryCandidatesData.reduce((sum, candidate) => sum + (candidate.votes || 0), 0);
+                leadingVotes = Math.max(...categoryCandidatesData.map(c => c.votes || 0), 0);
+            }
+            
+            // Update statistics
+            const totalCandidatesEl = document.getElementById('${category}-total-candidates');
+            const totalVotesEl = document.getElementById('${category}-total-votes');
+            const leadingVotesEl = document.getElementById('${category}-leading-votes');
+            
+            if (totalCandidatesEl) totalCandidatesEl.textContent = categoryCandidates || 0;
+            if (totalVotesEl) totalVotesEl.textContent = categoryVotes;
+            if (leadingVotesEl) leadingVotesEl.textContent = leadingVotes;
+            
+        } catch (error) {
+            console.error('Error updating statistics:', error);
+        }
+    }
+    
+    // Timer function
+    function updateCountdown() {
+        const deadline = new Date('December 13, 2025 13:00:00').getTime();
+        const now = new Date().getTime();
+        const timeLeft = deadline - now;
+        
+        if (timeLeft < 0) {
+            // Update countdown display
+            ['days', 'hours', 'minutes', 'seconds'].forEach(id => {
+                const el = document.getElementById(`countdown-${id}`);
+                if (el) el.textContent = '00';
+            });
+            return;
+        }
+        
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        
+        // Update display
+        const daysEl = document.getElementById('countdown-days');
+        const hoursEl = document.getElementById('countdown-hours');
+        const minutesEl = document.getElementById('countdown-minutes');
+        const secondsEl = document.getElementById('countdown-seconds');
+        
+        if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
+        if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
+        if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
+        if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
+    }
+    
+    // Show vote modal
+    function showVoteModal(candidateId, candidateName, category) {
+        const modal = document.getElementById('vote-modal');
+        if (modal) {
+            document.getElementById('modal-candidate-name').textContent = candidateName;
+            document.getElementById('modal-candidate-category').textContent = 
+                category === 'miss' ? 'Miss NFONAP' : 'Master NFONAP';
+            document.getElementById('modal-candidate-id').value = candidateId;
+            modal.style.display = 'flex';
+        }
+    }
+</script>
 </body>
 </html>
