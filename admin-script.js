@@ -70,16 +70,7 @@ function initializeDefaultData() {
     db.saveData();
 }
 
-// Check if admin is logged in
-function checkAdminSession() {
-    const session = sessionStorage.getItem('adminSession');
-    if (session) {
-        adminSession = JSON.parse(session);
-        showDashboard();
-    } else {
-        showLoginForm();
-    }
-}
+
 
 // Initialize event listeners
 function initializeEventListeners() {
