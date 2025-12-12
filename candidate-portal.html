@@ -883,11 +883,25 @@
     </footer>
 
 <script>
-    // Candidate Portal Script
+    // Candidate Portal Script with Supabase
     let currentCandidate = null;
     
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
         console.log('Candidate portal loaded');
+        
+        // Add Supabase
+        const supabaseScript = document.createElement('script');
+        supabaseScript.src = 'https://unpkg.com/@supabase/supabase-js@2';
+        document.head.appendChild(supabaseScript);
+        
+        await new Promise(resolve => {
+            supabaseScript.onload = resolve;
+        });
+        
+        window.supabaseClient = window.supabase.createClient(
+            'YOUR_PROJECT_URL_HERE',
+            'YOUR_ANON_KEY_HERE'
+        );
         
         // Mobile menu toggle
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
@@ -908,14 +922,14 @@
         }
         
         // Load candidate data
-        loadCandidateData(candidateToken);
+        await loadCandidateData(candidateToken);
         
         // Setup event listeners for voting
         setupVotingEvents();
         
         // Set up auto-refresh every 30 seconds
-        setInterval(() => {
-            loadCandidateData(candidateToken);
+        setInterval(async () => {
+            await loadCandidateData(candidateToken);
         }, 30000);
         
         // Initialize countdown timer
@@ -923,347 +937,121 @@
         setInterval(updateCountdown, 1000);
     });
     
-    // Setup voting event listeners
-    function setupVotingEvents() {
-        // Show vote modal
-        document.getElementById('show-vote-btn').addEventListener('click', showVoteModal);
-        
-        // Close modal buttons
-        document.querySelectorAll('.modal-close').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const modal = this.closest('.modal-overlay');
-                if (modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        });
-        
-        // Close modal on overlay click
-        document.querySelectorAll('.modal-overlay').forEach(modal => {
-            modal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.style.display = 'none';
-                }
-            });
-        });
-    }
-    
-    // Show vote modal
-    function showVoteModal() {
-        if (!currentCandidate) return;
-        
-        // Set candidate info in modal
-        document.getElementById('candidate-modal-name').textContent = currentCandidate.name;
-        document.getElementById('candidate-modal-category').textContent = 
-            currentCandidate.category === 'miss' ? 'Miss NFONAP' : 'Master NFONAP';
-        document.getElementById('candidate-modal-id').value = currentCandidate.id;
-        
-        // Clear form
-        document.getElementById('candidate-voter-email').value = '';
-        document.getElementById('candidate-voter-name').value = '';
-        
-        // Show modal
-        document.getElementById('candidate-vote-modal').style.display = 'flex';
-    }
-    
-    // Submit vote from candidate portal
-    function submitCandidateVote() {
-        const candidateId = document.getElementById('candidate-modal-id').value;
-        const voterEmail = document.getElementById('candidate-voter-email').value.trim();
-        const voterName = document.getElementById('candidate-voter-name').value.trim();
-        
-        // Validation
-        if (!voterEmail || !voterName) {
-            showToast('Please fill in all required fields', 'error');
-            return;
-        }
-        
-        // Check deadline
-        const deadline = new Date('December 13, 2025 13:00:00').getTime();
-        const now = new Date().getTime();
-        if (now >= deadline) {
-            showToast('Voting has ended! The deadline was December 13, 2025 at 1:00 PM.', 'error');
-            return;
-        }
-        
-        // Simple email validation
-        if (!voterEmail.includes('@') || !voterEmail.includes('.')) {
-            showToast('Please enter a valid email address', 'error');
-            return;
-        }
-        
+    // Load candidate data from Supabase
+    async function loadCandidateData(token) {
         try {
-            // Get candidates and voters from localStorage
-            const candidates = JSON.parse(localStorage.getItem('nfonap_candidates') || '[]');
-            const votes = JSON.parse(localStorage.getItem('nfonap_votes') || '[]');
-            const voters = JSON.parse(localStorage.getItem('nfonap_voters') || '[]');
+            // Find candidate by monitoring token
+            const { data: candidate, error } = await supabaseClient
+                .from('candidates')
+                .select('*')
+                .eq('monitoring_token', token)
+                .single();
             
-            const candidate = candidates.find(c => c.id === candidateId);
-            
-            if (!candidate) {
-                showToast('Candidate not found!', 'error');
+            if (error || !candidate) {
+                showError('Candidate not found. Please check your monitoring link.');
                 return;
             }
             
-            // Check if already voted
-            const hasVoted = voters.some(v => v.email === voterEmail);
-            if (hasVoted) {
-                showToast('You have already voted! Each person can only vote once.', 'error');
-                return;
+            currentCandidate = candidate;
+            
+            // Get votes for this candidate
+            const { count: voteCount, error: votesError } = await supabaseClient
+                .from('votes')
+                .select('*', { count: 'exact', head: true })
+                .eq('candidate_id', candidate.id);
+            
+            if (votesError) throw votesError;
+            
+            // Get total votes
+            const { count: totalVotes, error: totalVotesError } = await supabaseClient
+                .from('votes')
+                .select('*', { count: 'exact', head: true });
+            
+            if (totalVotesError) throw totalVotesError;
+            
+            // Calculate statistics
+            const candidateVotes = voteCount || 0;
+            const totalVotesCount = totalVotes || 1; // Avoid division by zero
+            const votePercentage = ((candidateVotes / totalVotesCount) * 100).toFixed(1);
+            
+            // Get all candidates in same category for ranking
+            const { data: categoryCandidates, error: categoryError } = await supabaseClient
+                .from('candidates')
+                .select('id, name, votes')
+                .eq('category', candidate.category)
+                .order('votes', { ascending: false });
+            
+            if (categoryError) throw categoryError;
+            
+            // Calculate rank
+            let rank = 1;
+            if (categoryCandidates) {
+                rank = categoryCandidates.findIndex(c => c.id === candidate.id) + 1;
+                if (rank === 0) rank = categoryCandidates.length + 1;
             }
             
-            // Create vote record
-            const vote = {
-                id: 'vote-' + Date.now(),
-                candidateId,
-                candidateName: candidate.name,
-                category: candidate.category,
-                voterEmail,
-                voterName,
-                timestamp: new Date().toISOString()
+            // Hide loading, show dashboard
+            document.getElementById('loading-section').style.display = 'none';
+            document.getElementById('candidate-dashboard').style.display = 'block';
+            document.getElementById('error-section').style.display = 'none';
+            
+            // Update candidate information
+            document.getElementById('candidate-name').textContent = candidate.name;
+            document.getElementById('candidate-category').textContent = 
+                candidate.category === 'miss' ? '👑 Miss NFONAP' : '👑 Master NFONAP';
+            document.getElementById('candidate-program').textContent = candidate.program;
+            document.getElementById('candidate-department').textContent = candidate.department;
+            document.getElementById('candidate-email').textContent = candidate.email || 'Not provided';
+            document.getElementById('candidate-phone').textContent = candidate.phone || 'Not provided';
+            document.getElementById('candidate-joined').textContent = 
+                candidate.created_at ? new Date(candidate.created_at).toLocaleDateString() : 'Recently';
+            document.getElementById('candidate-bio').textContent = candidate.bio || 'No biography available.';
+            document.getElementById('candidate-manifesto').textContent = candidate.manifesto || 'No manifesto available.';
+            
+            // Set candidate photo
+            const photoElement = document.getElementById('candidate-photo');
+            photoElement.src = candidate.photo || 'assets/default-avatar.jpg';
+            photoElement.onerror = function() {
+                this.src = 'assets/default-avatar.jpg';
             };
             
-            // Save vote
-            votes.push(vote);
-            localStorage.setItem('nfonap_votes', JSON.stringify(votes));
+            // Update statistics
+            document.getElementById('total-votes').textContent = candidateVotes;
+            document.getElementById('vote-percentage').textContent = votePercentage + '%';
+            document.getElementById('rank').textContent = '#' + rank;
             
-            // Save voter
-            voters.push({
-                email: voterEmail,
-                name: voterName,
-                votedAt: new Date().toISOString(),
-                candidateId: candidateId
-            });
-            localStorage.setItem('nfonap_voters', JSON.stringify(voters));
+            // Get recent votes for this candidate
+            const { data: recentVotes, error: recentError } = await supabaseClient
+                .from('votes')
+                .select('*')
+                .eq('candidate_id', candidate.id)
+                .order('created_at', { ascending: false })
+                .limit(10);
             
-            // Show success message
-            showToast(`Thank you for voting for ${candidate.name}!`, 'success');
+            if (!recentError && recentVotes) {
+                updateVoteHistory(recentVotes);
+            }
             
-            // Show success message in page
-            document.getElementById('vote-success').style.display = 'block';
-            document.getElementById('voting-info').style.display = 'none';
+            // Update page title
+            document.title = `${candidate.name} - NFONAP Candidate Dashboard`;
             
-            // Close modal
-            document.getElementById('candidate-vote-modal').style.display = 'none';
-            
-            // Refresh candidate data to update vote count
-            setTimeout(() => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const candidateToken = urlParams.get('token');
-                loadCandidateData(candidateToken);
-            }, 1000);
+            // Show voting section if voting is active
+            const deadline = new Date('December 13, 2025 13:00:00').getTime();
+            const now = new Date().getTime();
+            if (now < deadline) {
+                document.getElementById('voting-info').style.display = 'block';
+                document.getElementById('vote-success').style.display = 'none';
+            } else {
+                document.getElementById('voting-info').style.display = 'none';
+                document.getElementById('vote-ended').style.display = 'block';
+            }
             
         } catch (error) {
-            console.error('Error submitting vote:', error);
-            showToast('An error occurred while submitting your vote. Please try again.', 'error');
+            console.error('Error loading candidate data:', error);
+            showError('Error loading candidate data. Please try again.');
         }
-    }
-    
-    // Load candidate data
-    function loadCandidateData(token) {
-        const candidates = JSON.parse(localStorage.getItem('nfonap_candidates') || '[]');
-        const votes = JSON.parse(localStorage.getItem('nfonap_votes') || '[]');
-        const voters = JSON.parse(localStorage.getItem('nfonap_voters') || '[]');
-        
-        // Find candidate by token
-        const candidate = candidates.find(c => c.monitoringToken === token);
-        
-        if (!candidate) {
-            showError('Candidate not found. Please check your monitoring link.');
-            return;
-        }
-        
-        currentCandidate = candidate;
-        
-        // Hide loading, show dashboard
-        document.getElementById('loading-section').style.display = 'none';
-        document.getElementById('candidate-dashboard').style.display = 'block';
-        document.getElementById('error-section').style.display = 'none';
-        
-        // Update candidate information
-        document.getElementById('candidate-name').textContent = candidate.name;
-        document.getElementById('candidate-category').textContent = candidate.category === 'miss' ? '👑 Miss NFONAP' : '👑 Master NFONAP';
-        document.getElementById('candidate-program').textContent = candidate.program;
-        document.getElementById('candidate-department').textContent = candidate.department;
-        document.getElementById('candidate-email').textContent = candidate.email || 'Not provided';
-        document.getElementById('candidate-phone').textContent = candidate.phone || 'Not provided';
-        document.getElementById('candidate-joined').textContent = candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString() : 'Recently';
-        document.getElementById('candidate-bio').textContent = candidate.bio || 'No biography available.';
-        document.getElementById('candidate-manifesto').textContent = candidate.manifesto || 'No manifesto available.';
-        
-        // Set candidate photo
-        const photoElement = document.getElementById('candidate-photo');
-        if (candidate.photo && candidate.photo.startsWith('data:image')) {
-            photoElement.src = candidate.photo;
-        } else if (candidate.photo) {
-            photoElement.src = candidate.photo;
-        } else {
-            photoElement.src = 'assets/default-avatar.jpg';
-        }
-        
-        // Calculate vote statistics
-        const candidateVotes = votes.filter(v => v.candidateId === candidate.id);
-        const totalVotes = votes.length;
-        const votePercentage = totalVotes > 0 ? ((candidateVotes.length / totalVotes) * 100).toFixed(1) : 0;
-        
-        // Calculate rank among candidates in same category
-        const categoryCandidates = candidates.filter(c => c.category === candidate.category);
-        const candidateRanks = categoryCandidates.map(c => {
-            const votesCount = votes.filter(v => v.candidateId === c.id).length;
-            return { id: c.id, name: c.name, votes: votesCount };
-        }).sort((a, b) => b.votes - a.votes);
-        
-        const rank = candidateRanks.findIndex(r => r.id === candidate.id) + 1;
-        const totalCandidatesInCategory = categoryCandidates.length;
-        
-        // Update statistics
-        document.getElementById('total-votes').textContent = candidateVotes.length;
-        document.getElementById('vote-percentage').textContent = votePercentage + '%';
-        document.getElementById('rank').textContent = '#' + rank + ' of ' + totalCandidatesInCategory;
-        
-        // Update progress bar
-        const maxVotesInCategory = Math.max(...candidateRanks.map(r => r.votes), 1);
-        const progressPercentage = maxVotesInCategory > 0 ? (candidateVotes.length / maxVotesInCategory * 100).toFixed(0) : 0;
-        document.getElementById('progress-bar').style.width = progressPercentage + '%';
-        document.getElementById('progress-text').textContent = `${candidateVotes.length} votes (${progressPercentage}% of category leader)`;
-        
-        // Update vote history
-        const voteHistoryElement = document.getElementById('vote-history');
-        if (candidateVotes.length === 0) {
-            voteHistoryElement.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No votes yet. Be the first to vote!</p>';
-        } else {
-            let historyHTML = '';
-            const recentVotes = candidateVotes.slice(-10).reverse();
-            
-            recentVotes.forEach(vote => {
-                const timeAgo = getTimeAgo(vote.timestamp);
-                const voterInitials = getInitials(vote.voterName);
-                
-                historyHTML += `
-                    <div class="vote-item">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong>${vote.voterName}</strong>
-                                <div class="vote-time">${timeAgo}</div>
-                            </div>
-                            <div style="background: #420942; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                                ${voterInitials}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            voteHistoryElement.innerHTML = historyHTML;
-        }
-        
-        // Update page title
-        document.title = `${candidate.name} - NFONAP Candidate Dashboard`;
-        
-        // Show voting section
-        document.getElementById('voting-info').style.display = 'block';
-        document.getElementById('vote-success').style.display = 'none';
-    }
-    
-    // Timer countdown function
-    function updateCountdown() {
-        // Set the deadline: December 13, 2025 at 1:00 PM
-        const deadline = new Date('December 13, 2025 13:00:00').getTime();
-        const now = new Date().getTime();
-        const timeLeft = deadline - now;
-        
-        // If deadline has passed
-        if (timeLeft < 0) {
-            // Hide vote button if voting has ended
-            const voteBtn = document.getElementById('show-vote-btn');
-            if (voteBtn) {
-                voteBtn.textContent = 'Voting Ended';
-                voteBtn.style.backgroundColor = '#6c757d';
-                voteBtn.style.cursor = 'not-allowed';
-                voteBtn.onclick = function(e) {
-                    e.preventDefault();
-                    showToast('Voting has ended! The deadline was December 13, 2025 at 1:00 PM.', 'error');
-                };
-            }
-            return;
-        }
-        
-        // Calculate days, hours, minutes, seconds
-        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-        
-        // Update the display if elements exist
-        const daysEl = document.getElementById('countdown-days');
-        const hoursEl = document.getElementById('countdown-hours');
-        const minutesEl = document.getElementById('countdown-minutes');
-        const secondsEl = document.getElementById('countdown-seconds');
-        
-        if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
-        if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
-        if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
-        if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
-    }
-    
-    // Show error message
-    function showError(message) {
-        document.getElementById('loading-section').style.display = 'none';
-        document.getElementById('error-section').style.display = 'block';
-        document.getElementById('error-message').textContent = message;
-    }
-    
-    // Toast notification system
-    function showToast(message, type = 'info') {
-        const container = document.getElementById('candidate-toast-container');
-        if (!container) return;
-        
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.innerHTML = `
-            <div class="toast-message">${message}</div>
-            <button class="toast-close">&times;</button>
-        `;
-        
-        container.appendChild(toast);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            toast.style.animation = 'fadeOut 0.3s ease forwards';
-            setTimeout(() => toast.remove(), 300);
-        }, 5000);
-        
-        // Close button
-        toast.querySelector('.toast-close').onclick = () => {
-            toast.style.animation = 'fadeOut 0.3s ease forwards';
-            setTimeout(() => toast.remove(), 300);
-        };
-    }
-    
-    // Helper function to get time ago
-    function getTimeAgo(timestamp) {
-        if (!timestamp) return 'Recently';
-        
-        const now = new Date();
-        const past = new Date(timestamp);
-        const diffMs = now - past;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-        
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
-        if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-        if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
-        
-        return past.toLocaleDateString();
-    }
-    
-    // Helper function to get initials
-    function getInitials(name) {
-        if (!name) return '??';
-        return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
     }
 </script>
+
 </body>
 </html>
