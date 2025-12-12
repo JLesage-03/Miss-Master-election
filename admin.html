@@ -933,951 +933,179 @@
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
-    <script>
-        // Complete working admin script with photo upload and monitoring links
-        let currentFilter = 'all';
-        let adminSession = null;
-        let candidatesData = [];
+  <script>
+    // Initialize Supabase
+    const supabaseUrl = 'YOUR_SUPABASE_URL';
+    const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    
+    let adminSession = null;
+    let candidatesData = [];
 
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Admin page loaded');
-            
-            // Check if user is already logged in
-            checkAdminSession();
-            
-            // Initialize default data if needed
-            initializeDefaultData();
-            
-            // Set up all event listeners
-            setupEventListeners();
-        });
-
-        // Check admin session
-        function checkAdminSession() {
-            const session = localStorage.getItem('adminSession');
-            if (session) {
-                adminSession = JSON.parse(session);
-                showDashboard();
-            } else {
-                showLoginForm();
-            }
+    // Check admin session
+    async function checkAdminSession() {
+        const session = localStorage.getItem('adminSession');
+        if (session) {
+            adminSession = JSON.parse(session);
+            await loadCandidatesFromSupabase();
+            showDashboard();
+        } else {
+            showLoginForm();
         }
+    }
 
-        // Initialize default data
-        function initializeDefaultData() {
-            // Check if we already have candidates
-            const existingCandidates = getCandidates();
-            if (existingCandidates.length === 0) {
-                const defaultCandidates = [
-                    {
-                        id: '1',
-                        category: 'miss',
-                        name: 'Amara Ndeze',
-                        program: 'Computer Science',
-                        department: 'Faculty of Engineering',
-                        email: 'amara.ndeze@nfonap.edu.cm',
-                        phone: '+237 655 123 456',
-                        bio: 'Passionate about technology and community development.',
-                        manifesto: 'Dedicated to improving campus technology infrastructure.',
-                        photo: 'assets/default-avatar.jpg',
-                        monitoringToken: 'nfonap_miss_1',
-                        createdAt: new Date().toISOString()
-                    },
-                    {
-                        id: '2',
-                        category: 'miss',
-                        name: 'Christelle Tanyi',
-                        program: 'Business Administration',
-                        department: 'Faculty of Business',
-                        email: 'christelle.tanyi@nfonap.edu.cm',
-                        phone: '+237 677 987 654',
-                        bio: 'Entrepreneur and business enthusiast.',
-                        manifesto: 'Committed to promoting entrepreneurship.',
-                        photo: 'assets/default-avatar.jpg',
-                        monitoringToken: 'nfonap_miss_2',
-                        createdAt: new Date().toISOString()
-                    },
-                    {
-                        id: '3',
-                        category: 'master',
-                        name: 'David Ngufor',
-                        program: 'Software Engineering',
-                        department: 'Faculty of Engineering',
-                        email: 'david.ngufor@nfonap.edu.cm',
-                        phone: '+237 699 456 789',
-                        bio: 'Tech leader with experience in software development.',
-                        manifesto: 'Working towards digital transformation.',
-                        photo: 'assets/default-avatar.jpg',
-                        monitoringToken: 'nfonap_master_1',
-                        createdAt: new Date().toISOString()
-                    },
-                    {
-                        id: '4',
-                        category: 'master',
-                        name: 'Benjamin Nkwa',
-                        program: 'Finance',
-                        department: 'Faculty of Business',
-                        email: 'benjamin.nkwa@nfonap.edu.cm',
-                        phone: '+237 688 321 987',
-                        bio: 'Economics scholar focused on development.',
-                        manifesto: 'Advocating for economic growth.',
-                        photo: 'assets/default-avatar.jpg',
-                        monitoringToken: 'nfonap_master_2',
-                        createdAt: new Date().toISOString()
-                    }
-                ];
-                
-                // Save default candidates
-                localStorage.setItem('nfonap_candidates', JSON.stringify(defaultCandidates));
-                
-                // Initialize votes if not exists
-                if (!localStorage.getItem('nfonap_votes')) {
-                    localStorage.setItem('nfonap_votes', JSON.stringify([]));
-                }
-                
-                // Initialize voters if not exists
-                if (!localStorage.getItem('nfonap_voters')) {
-                    localStorage.setItem('nfonap_voters', JSON.stringify([]));
-                }
-                
-                // Initialize admin password if not exists
-                if (!localStorage.getItem('adminPassword')) {
-                    localStorage.setItem('adminPassword', 'nfonap2025');
-                }
-                
-                console.log('Default data initialized');
-            }
-        }
-
-        // Setup all event listeners
-        function setupEventListeners() {
-            console.log('Setting up event listeners');
+    // Load candidates from Supabase
+    async function loadCandidatesFromSupabase() {
+        try {
+            const { data, error } = await supabase
+                .from('candidates')
+                .select('*')
+                .order('created_at', { ascending: false });
             
-            // Mobile menu toggle
-            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-            if (mobileMenuBtn) {
-                mobileMenuBtn.addEventListener('click', function() {
-                    const nav = document.querySelector('.nav');
-                    nav.classList.toggle('active');
-                });
-            }
+            if (error) throw error;
             
-            // Login button
-            const loginBtn = document.getElementById('login-btn');
-            if (loginBtn) {
-                loginBtn.addEventListener('click', login);
-            }
-            
-            // Enter key for login
-            const passwordInput = document.getElementById('admin-password');
-            if (passwordInput) {
-                passwordInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        login();
-                    }
-                });
-            }
-            
-            // Logout button
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', logout);
-            }
-            
-            // Refresh button
-            const refreshBtn = document.getElementById('refresh-btn');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', refreshDashboard);
-            }
-            
-            // Export button
-            const exportBtn = document.getElementById('export-btn');
-            if (exportBtn) {
-                exportBtn.addEventListener('click', exportData);
-            }
-            
-            // Add candidate button
-            const addCandidateBtn = document.getElementById('add-candidate-btn');
-            if (addCandidateBtn) {
-                addCandidateBtn.addEventListener('click', function() {
-                    showModal('add-candidate-modal');
-                    document.getElementById('add-candidate-form').reset();
-                    document.getElementById('add-photo-preview').src = 'assets/default-avatar.jpg';
-                    document.getElementById('candidate-photo-data').value = 'assets/default-avatar.jpg';
-                    document.getElementById('add-monitoring-link-container').style.display = 'none';
-                });
-            }
-            
-            // Photo upload for add candidate
-            const addPhotoUpload = document.getElementById('candidate-photo-upload');
-            if (addPhotoUpload) {
-                addPhotoUpload.addEventListener('change', function(e) {
-                    handlePhotoUpload(e, 'add-photo-preview', 'candidate-photo-data');
-                });
-            }
-            
-            // Photo upload for edit candidate
-            const editPhotoUpload = document.getElementById('edit-candidate-photo-upload');
-            if (editPhotoUpload) {
-                editPhotoUpload.addEventListener('change', function(e) {
-                    handlePhotoUpload(e, 'edit-photo-preview', 'edit-candidate-photo-data');
-                });
-            }
-            
-            // Submit add candidate
-            const submitAddBtn = document.getElementById('submit-add-btn');
-            if (submitAddBtn) {
-                submitAddBtn.addEventListener('click', addCandidate);
-            }
-            
-            // Cancel add candidate
-            const cancelAddBtn = document.getElementById('cancel-add-btn');
-            if (cancelAddBtn) {
-                cancelAddBtn.addEventListener('click', function() {
-                    hideModal('add-candidate-modal');
-                });
-            }
-            
-            // Cancel edit candidate
-            const cancelEditBtn = document.getElementById('cancel-edit-btn');
-            if (cancelEditBtn) {
-                cancelEditBtn.addEventListener('click', function() {
-                    hideModal('edit-candidate-modal');
-                });
-            }
-            
-            // Submit edit candidate
-            const submitEditBtn = document.getElementById('submit-edit-btn');
-            if (submitEditBtn) {
-                submitEditBtn.addEventListener('click', updateCandidate);
-            }
-            
-            // Copy add monitoring link
-            const copyAddLinkBtn = document.getElementById('copy-add-link');
-            if (copyAddLinkBtn) {
-                copyAddLinkBtn.addEventListener('click', function() {
-                    const link = document.getElementById('add-monitoring-link').textContent;
-                    copyToClipboard(link);
-                });
-            }
-            
-            // Copy edit monitoring link
-            const copyEditLinkBtn = document.getElementById('copy-edit-link');
-            if (copyEditLinkBtn) {
-                copyEditLinkBtn.addEventListener('click', function() {
-                    const link = document.getElementById('edit-monitoring-link').textContent;
-                    copyToClipboard(link);
-                });
-            }
-            
-            // Reset monitoring token
-            const resetTokenBtn = document.getElementById('reset-monitoring-token');
-            if (resetTokenBtn) {
-                resetTokenBtn.addEventListener('click', resetMonitoringToken);
-            }
-            
-            // Filter buttons
-            document.getElementById('filter-all').addEventListener('click', function() {
-                filterCandidates('all');
-            });
-            document.getElementById('filter-miss').addEventListener('click', function() {
-                filterCandidates('miss');
-            });
-            document.getElementById('filter-master').addEventListener('click', function() {
-                filterCandidates('master');
-            });
-            
-            // Database management buttons
-            const backupBtn = document.getElementById('backup-btn');
-            if (backupBtn) backupBtn.addEventListener('click', backupDatabase);
-            
-            const restoreBtn = document.getElementById('restore-btn');
-            if (restoreBtn) restoreBtn.addEventListener('click', restoreDatabase);
-            
-            const resetBtn = document.getElementById('reset-btn');
-            if (resetBtn) resetBtn.addEventListener('click', resetDatabase);
-            
-            const changePasswordBtn = document.getElementById('change-password-btn');
-            if (changePasswordBtn) {
-                changePasswordBtn.addEventListener('click', function() {
-                    showModal('password-modal');
-                    document.getElementById('current-password').value = '';
-                    document.getElementById('new-password').value = '';
-                    document.getElementById('confirm-password').value = '';
-                });
-            }
-            
-            const cancelPasswordBtn = document.getElementById('cancel-password-btn');
-            if (cancelPasswordBtn) {
-                cancelPasswordBtn.addEventListener('click', function() {
-                    hideModal('password-modal');
-                });
-            }
-            
-            const submitPasswordBtn = document.getElementById('submit-password-btn');
-            if (submitPasswordBtn) {
-                submitPasswordBtn.addEventListener('click', changePassword);
-            }
-            
-            // Modal close buttons
-            const modalCloseButtons = document.querySelectorAll('.modal-close');
-            modalCloseButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const modal = this.closest('.modal-overlay');
-                    if (modal) {
-                        modal.style.display = 'none';
-                    }
-                });
-            });
-            
-            // Click outside modal to close
-            const modals = document.querySelectorAll('.modal-overlay');
-            modals.forEach(modal => {
-                modal.addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        this.style.display = 'none';
-                    }
-                });
-            });
-            
-            console.log('All event listeners set up');
-        }
-
-        // Handle photo upload
-        function handlePhotoUpload(event, previewId, dataInputId) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (!file.type.match('image.*')) {
-                showToast('Please select an image file', 'error');
-                return;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                showToast('Image size should be less than 5MB', 'error');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById(previewId);
-                const dataInput = document.getElementById(dataInputId);
-                
-                preview.src = e.target.result;
-                dataInput.value = e.target.result; // Store base64 data
-            };
-            
-            reader.readAsDataURL(file);
-        }
-
-        // Show/hide modal functions
-        function showModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'flex';
-            }
-        }
-
-        function hideModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        }
-
-        // Generate monitoring token
-        function generateMonitoringToken() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let token = '';
-            for (let i = 0; i < 16; i++) {
-                token += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return 'nfonap_' + token;
-        }
-
-        // Generate monitoring link
-        function generateMonitoringLink(token) {
-            const currentUrl = window.location.href;
-            const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1);
-            return `${baseUrl}candidate-portal.html?token=${token}`;
-        }
-
-        // Copy to clipboard
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(function() {
-                showToast('Link copied to clipboard!', 'success');
-            }, function(err) {
-                console.error('Failed to copy: ', err);
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                showToast('Link copied to clipboard!', 'success');
-            });
-        }
-
-        // Login function
-        function login() {
-            const username = document.getElementById('admin-username').value.trim();
-            const password = document.getElementById('admin-password').value.trim();
-
-            if (!username || !password) {
-                showToast('Please enter username and password', 'warning');
-                return;
-            }
-
-            const storedPassword = localStorage.getItem('adminPassword') || 'nfonap2025';
-
-            if (username === 'admin' && password === storedPassword) {
-                adminSession = {
-                    username: username,
-                    loginTime: new Date().toISOString()
-                };
-                localStorage.setItem('adminSession', JSON.stringify(adminSession));
-                
-                // Clear form
-                document.getElementById('admin-username').value = '';
-                document.getElementById('admin-password').value = '';
-                
-                showDashboard();
-                showToast('Login successful!', 'success');
-            } else {
-                showToast('Invalid username or password', 'error');
-            }
-        }
-
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('adminSession');
-                adminSession = null;
-                showLoginForm();
-                showToast('Logged out successfully', 'info');
-            }
-        }
-
-        function showLoginForm() {
-            document.getElementById('login-section').style.display = 'block';
-            document.getElementById('dashboard-section').style.display = 'none';
-            document.getElementById('logout-btn').style.display = 'none';
-        }
-
-        function showDashboard() {
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('dashboard-section').style.display = 'block';
-            document.getElementById('logout-btn').style.display = 'inline-block';
-            
-            if (adminSession) {
-                document.getElementById('admin-name').textContent = adminSession.username;
-                const loginTime = new Date(adminSession.loginTime);
-                document.getElementById('last-login').textContent = loginTime.toLocaleString();
-            }
-            
-            refreshDashboard();
-        }
-
-        // Database helper functions
-        function getCandidates() {
-            const data = localStorage.getItem('nfonap_candidates');
-            return data ? JSON.parse(data) : [];
-        }
-
-        function saveCandidates(candidates) {
-            localStorage.setItem('nfonap_candidates', JSON.stringify(candidates));
-        }
-
-        function getVotes() {
-            const data = localStorage.getItem('nfonap_votes');
-            return data ? JSON.parse(data) : [];
-        }
-
-        // Refresh dashboard
-        function refreshDashboard() {
+            candidatesData = data || [];
             updateStatistics();
             loadCandidatesTable();
+            
+        } catch (error) {
+            console.error('Error loading candidates:', error);
+            showToast('Error loading candidates: ' + error.message, 'error');
         }
+    }
 
-        function updateStatistics() {
-            const candidates = getCandidates();
-            const votes = getVotes();
+    // Add candidate to Supabase
+    async function addCandidate(candidateData) {
+        try {
+            const { data, error } = await supabase
+                .from('candidates')
+                .insert([candidateData])
+                .select();
             
-            const totalCandidates = candidates.length;
-            const missCandidates = candidates.filter(c => c.category === 'miss').length;
-            const masterCandidates = candidates.filter(c => c.category === 'master').length;
-            const totalVotes = votes.length;
-
-            document.getElementById('admin-total-candidates').textContent = totalCandidates;
-            document.getElementById('admin-total-votes').textContent = totalVotes;
-            document.getElementById('admin-miss-candidates').textContent = missCandidates;
-            document.getElementById('admin-master-candidates').textContent = masterCandidates;
+            if (error) throw error;
+            
+            showToast('Candidate added successfully!', 'success');
+            await loadCandidatesFromSupabase();
+            
+        } catch (error) {
+            console.error('Error adding candidate:', error);
+            showToast('Error adding candidate: ' + error.message, 'error');
         }
+    }
 
-        function loadCandidatesTable() {
-            const tbody = document.getElementById('candidates-tbody');
-            if (!tbody) return;
+    // Update candidate in Supabase
+    async function updateCandidate(candidateId, candidateData) {
+        try {
+            const { error } = await supabase
+                .from('candidates')
+                .update(candidateData)
+                .eq('id', candidateId);
             
-            let candidates = getCandidates();
-            const votes = getVotes();
+            if (error) throw error;
             
-            // Apply filter
-            if (currentFilter === 'miss') {
-                candidates = candidates.filter(c => c.category === 'miss');
-            } else if (currentFilter === 'master') {
-                candidates = candidates.filter(c => c.category === 'master');
-            }
-            
-            if (candidates.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #666;">No candidates found</td></tr>';
-                return;
-            }
-            
-            let html = '';
-            
-            candidates.forEach(candidate => {
-                const voteCount = votes.filter(v => v.candidateId === candidate.id).length;
-                const categoryLabel = candidate.category === 'miss' ? '👩 Miss' : '👨 Master';
-                const photoUrl = candidate.photo || 'assets/default-avatar.jpg';
-                
-                html += `
-                    <tr data-id="${candidate.id}">
-                        <td><strong>${candidate.name}</strong></td>
-                        <td>
-                            <img src="${photoUrl}" alt="${candidate.name}" 
-                                 style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;">
-                        </td>
-                        <td>${categoryLabel}</td>
-                        <td>${candidate.program}</td>
-                        <td><strong>${voteCount}</strong></td>
-                        <td>
-                            <button class="btn btn-sm btn-info edit-candidate-btn" style="margin-right: 5px;">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="btn btn-sm btn-warning monitoring-link-btn" style="margin-right: 5px;">
-                                <i class="fas fa-link"></i> Link
-                            </button>
-                            <button class="btn btn-sm btn-danger delete-candidate-btn">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            tbody.innerHTML = html;
-            
-            // Add event listeners to buttons
-            document.querySelectorAll('.edit-candidate-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const candidateId = this.closest('tr').dataset.id;
-                    editCandidate(candidateId);
-                });
-            });
-            
-            document.querySelectorAll('.monitoring-link-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const candidateId = this.closest('tr').dataset.id;
-                    showCandidateMonitoringLink(candidateId);
-                });
-            });
-            
-            document.querySelectorAll('.delete-candidate-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const candidateId = this.closest('tr').dataset.id;
-                    deleteCandidate(candidateId);
-                });
-            });
-            
-            // Update filter button states
-            updateFilterButtons();
-        }
-
-        function updateFilterButtons() {
-            document.getElementById('filter-all').className = currentFilter === 'all' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline';
-            document.getElementById('filter-miss').className = currentFilter === 'miss' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline';
-            document.getElementById('filter-master').className = currentFilter === 'master' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline';
-        }
-
-        function filterCandidates(filter) {
-            currentFilter = filter;
-            loadCandidatesTable();
-        }
-
-        // Candidate management functions
-        function addCandidate() {
-            const category = document.getElementById('candidate-category').value;
-            const name = document.getElementById('candidate-name').value.trim();
-            const program = document.getElementById('candidate-program').value.trim();
-            const department = document.getElementById('candidate-department').value.trim();
-            const email = document.getElementById('candidate-email').value.trim();
-            const phone = document.getElementById('candidate-phone').value.trim();
-            const bio = document.getElementById('candidate-bio').value.trim();
-            const manifesto = document.getElementById('candidate-manifesto').value.trim();
-            const photo = document.getElementById('candidate-photo-data').value;
-
-            if (!category || !name || !program || !department || !bio) {
-                showToast('Please fill in all required fields', 'warning');
-                return;
-            }
-
-            const candidates = getCandidates();
-            const monitoringToken = generateMonitoringToken();
-            const candidate = {
-                id: Date.now().toString(),
-                category,
-                name,
-                program,
-                department,
-                email,
-                phone,
-                bio,
-                manifesto,
-                photo: photo || 'assets/default-avatar.jpg',
-                monitoringToken,
-                createdAt: new Date().toISOString()
-            };
-
-            candidates.push(candidate);
-            saveCandidates(candidates);
-            
-            // Show monitoring link
-            const monitoringLink = generateMonitoringLink(monitoringToken);
-            document.getElementById('add-monitoring-link').textContent = monitoringLink;
-            document.getElementById('add-monitoring-link-container').style.display = 'block';
-            
-            showToast('Candidate added successfully! Monitoring link generated.', 'success');
-            
-            // Refresh table after a delay
-            setTimeout(() => {
-                refreshDashboard();
-            }, 2000);
-        }
-
-        function editCandidate(candidateId) {
-            const candidates = getCandidates();
-            const candidate = candidates.find(c => c.id === candidateId);
-            
-            if (!candidate) {
-                showToast('Candidate not found', 'error');
-                return;
-            }
-
-            document.getElementById('edit-candidate-id').value = candidate.id;
-            document.getElementById('edit-candidate-monitoring-token').value = candidate.monitoringToken || generateMonitoringToken();
-            document.getElementById('edit-candidate-category').value = candidate.category;
-            document.getElementById('edit-candidate-name').value = candidate.name;
-            document.getElementById('edit-candidate-program').value = candidate.program;
-            document.getElementById('edit-candidate-department').value = candidate.department;
-            document.getElementById('edit-candidate-email').value = candidate.email || '';
-            document.getElementById('edit-candidate-phone').value = candidate.phone || '';
-            document.getElementById('edit-candidate-bio').value = candidate.bio;
-            document.getElementById('edit-candidate-manifesto').value = candidate.manifesto || '';
-            document.getElementById('edit-candidate-photo-data').value = candidate.photo || 'assets/default-avatar.jpg';
-            
-            // Set photo preview
-            document.getElementById('edit-photo-preview').src = candidate.photo || 'assets/default-avatar.jpg';
-            
-            // Set monitoring link
-            const token = candidate.monitoringToken || document.getElementById('edit-candidate-monitoring-token').value;
-            const monitoringLink = generateMonitoringLink(token);
-            document.getElementById('edit-monitoring-link').textContent = monitoringLink;
-            
-            showModal('edit-candidate-modal');
-        }
-
-        function showCandidateMonitoringLink(candidateId) {
-            const candidates = getCandidates();
-            const candidate = candidates.find(c => c.id === candidateId);
-            
-            if (!candidate) {
-                showToast('Candidate not found', 'error');
-                return;
-            }
-            
-            const token = candidate.monitoringToken;
-            if (!token) {
-                showToast('No monitoring token found for this candidate', 'warning');
-                return;
-            }
-            
-            const monitoringLink = generateMonitoringLink(token);
-            
-            // Create a temporary modal to show the link
-            const linkText = `Monitoring link for ${candidate.name}:\n\n${monitoringLink}\n\nClick OK to copy to clipboard.`;
-            
-            if (confirm(linkText)) {
-                copyToClipboard(monitoringLink);
-            }
-        }
-
-        function resetMonitoringToken() {
-            const candidateId = document.getElementById('edit-candidate-id').value;
-            if (!candidateId) return;
-            
-            const newToken = generateMonitoringToken();
-            document.getElementById('edit-candidate-monitoring-token').value = newToken;
-            
-            const monitoringLink = generateMonitoringLink(newToken);
-            document.getElementById('edit-monitoring-link').textContent = monitoringLink;
-            
-            showToast('Monitoring link has been reset', 'success');
-        }
-
-        function updateCandidate() {
-            const candidateId = document.getElementById('edit-candidate-id').value;
-            const monitoringToken = document.getElementById('edit-candidate-monitoring-token').value;
-            const category = document.getElementById('edit-candidate-category').value;
-            const name = document.getElementById('edit-candidate-name').value.trim();
-            const program = document.getElementById('edit-candidate-program').value.trim();
-            const department = document.getElementById('edit-candidate-department').value.trim();
-            const email = document.getElementById('edit-candidate-email').value.trim();
-            const phone = document.getElementById('edit-candidate-phone').value.trim();
-            const bio = document.getElementById('edit-candidate-bio').value.trim();
-            const manifesto = document.getElementById('edit-candidate-manifesto').value.trim();
-            const photo = document.getElementById('edit-candidate-photo-data').value;
-
-            if (!category || !name || !program || !department || !bio) {
-                showToast('Please fill in all required fields', 'warning');
-                return;
-            }
-
-            const candidates = getCandidates();
-            const candidateIndex = candidates.findIndex(c => c.id === candidateId);
-            
-            if (candidateIndex === -1) {
-                showToast('Candidate not found', 'error');
-                return;
-            }
-
-            candidates[candidateIndex] = {
-                ...candidates[candidateIndex],
-                monitoringToken,
-                category,
-                name,
-                program,
-                department,
-                email,
-                phone,
-                bio,
-                manifesto,
-                photo: photo || candidates[candidateIndex].photo,
-                updatedAt: new Date().toISOString()
-            };
-
-            saveCandidates(candidates);
-            hideModal('edit-candidate-modal');
-            refreshDashboard();
             showToast('Candidate updated successfully!', 'success');
+            await loadCandidatesFromSupabase();
+            
+        } catch (error) {
+            console.error('Error updating candidate:', error);
+            showToast('Error updating candidate: ' + error.message, 'error');
+        }
+    }
+
+    // Delete candidate from Supabase
+    async function deleteCandidate(candidateId) {
+        if (!confirm('Are you sure you want to delete this candidate? This action cannot be undone.')) {
+            return;
         }
 
-        function deleteCandidate(candidateId) {
-            if (!confirm('Are you sure you want to delete this candidate? This action cannot be undone.')) {
-                return;
-            }
-
-            let candidates = getCandidates();
-            let votes = getVotes();
-            let voters = JSON.parse(localStorage.getItem('nfonap_voters') || '[]');
+        try {
+            // First delete votes for this candidate
+            const { error: votesError } = await supabase
+                .from('votes')
+                .delete()
+                .eq('candidate_id', candidateId);
             
-            // Remove candidate
-            candidates = candidates.filter(c => c.id !== candidateId);
+            if (votesError) throw votesError;
             
-            // Remove votes for this candidate
-            votes = votes.filter(v => v.candidateId !== candidateId);
+            // Then delete the candidate
+            const { error } = await supabase
+                .from('candidates')
+                .delete()
+                .eq('id', candidateId);
             
-            // Remove voters who voted for this candidate
-            voters = voters.filter(v => {
-                const vote = votes.find(vt => vt.voterEmail === v.email);
-                return !vote || vote.candidateId !== candidateId;
-            });
+            if (error) throw error;
             
-            saveCandidates(candidates);
-            localStorage.setItem('nfonap_votes', JSON.stringify(votes));
-            localStorage.setItem('nfonap_voters', JSON.stringify(voters));
-            
-            refreshDashboard();
             showToast('Candidate deleted successfully!', 'success');
-        }
-
-        // Export data
-        function exportData() {
-            const candidates = getCandidates();
-            const votes = getVotes();
+            await loadCandidatesFromSupabase();
             
-            let csv = 'Name,Category,Program,Department,Email,Phone,Votes,Monitoring Link\n';
+        } catch (error) {
+            console.error('Error deleting candidate:', error);
+            showToast('Error deleting candidate: ' + error.message, 'error');
+        }
+    }
+
+    // Submit vote to Supabase
+    async function submitVote() {
+        const candidateId = document.getElementById('modal-candidate-id').value;
+        const voterEmail = document.getElementById('voter-email').value.trim();
+        const voterName = document.getElementById('voter-name').value.trim();
+
+        // Validation
+        if (!voterEmail || !voterName) {
+            showToast('Please fill in all required fields', 'error');
+            return;
+        }
+
+        try {
+            // Check if already voted for this candidate
+            const { data: existingVote, error: checkError } = await supabase
+                .from('votes')
+                .select('*')
+                .eq('voter_email', voterEmail)
+                .eq('candidate_id', candidateId)
+                .single();
             
-            candidates.forEach(candidate => {
-                const voteCount = votes.filter(v => v.candidateId === candidate.id).length;
-                const monitoringLink = generateMonitoringLink(candidate.monitoringToken || '');
-                const row = [
-                    candidate.name,
-                    candidate.category,
-                    candidate.program,
-                    candidate.department,
-                    candidate.email || '',
-                    candidate.phone || '',
-                    voteCount,
-                    monitoringLink
-                ].map(val => `"${val}"`).join(',');
-                csv += row + '\n';
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `nfonap-election-data-${new Date().toISOString().slice(0, 10)}.csv`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-
-            showToast('Data exported successfully!', 'success');
-        }
-
-        // Database management
-        function backupDatabase() {
-            const backup = {
-                timestamp: new Date().toISOString(),
-                candidates: getCandidates(),
-                votes: getVotes(),
-                voters: JSON.parse(localStorage.getItem('nfonap_voters') || '[]')
-            };
-
-            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `nfonap-backup-${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-
-            showToast('Database backed up successfully!', 'success');
-        }
-
-        function restoreDatabase() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    try {
-                        const backup = JSON.parse(event.target.result);
-                        
-                        if (!backup.candidates || !backup.votes || !backup.voters) {
-                            throw new Error('Invalid backup file');
-                        }
-                        
-                        saveCandidates(backup.candidates);
-                        localStorage.setItem('nfonap_votes', JSON.stringify(backup.votes));
-                        localStorage.setItem('nfonap_voters', JSON.stringify(backup.voters));
-                        
-                        refreshDashboard();
-                        showToast('Database restored successfully!', 'success');
-                    } catch (error) {
-                        showToast('Error restoring database: ' + error.message, 'error');
-                    }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-        }
-
-        function resetDatabase() {
-            if (!confirm('⚠️ WARNING! This will delete ALL data. Are you sure?')) {
-                showToast('Reset cancelled', 'info');
+            if (existingVote) {
+                showToast('You have already voted for this candidate!', 'error');
                 return;
             }
 
-            if (!confirm('This is your LAST warning. Type "RESET" to confirm.')) {
-                showToast('Reset cancelled', 'info');
-                return;
-            }
-
-            const userInput = prompt('Type "RESET" to confirm:');
-            if (userInput !== 'RESET') {
-                showToast('Reset cancelled', 'info');
-                return;
-            }
-
-            localStorage.removeItem('nfonap_candidates');
-            localStorage.removeItem('nfonap_votes');
-            localStorage.removeItem('nfonap_voters');
+            // Add vote
+            const { error: voteError } = await supabase
+                .from('votes')
+                .insert([{
+                    candidate_id: candidateId,
+                    voter_email: voterEmail,
+                    voter_name: voterName
+                }]);
             
-            initializeDefaultData();
-            refreshDashboard();
-            showToast('Database has been reset!', 'success');
+            if (voteError) throw voteError;
+            
+            // Update candidate vote count
+            const { error: updateError } = await supabase
+                .rpc('increment_votes', { candidate_id: candidateId });
+            
+            if (updateError) throw updateError;
+            
+            showToast('Thank you for voting!', 'success');
+            document.getElementById('vote-modal').style.display = 'none';
+            
+            // Refresh page to update counts
+            setTimeout(() => location.reload(), 1500);
+            
+        } catch (error) {
+            console.error('Error submitting vote:', error);
+            showToast('Error: ' + error.message, 'error');
         }
+    }
 
-        // Password management
-        function changePassword() {
-            const currentPassword = document.getElementById('current-password').value;
-            const newPassword = document.getElementById('new-password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-
-            if (!currentPassword || !newPassword || !confirmPassword) {
-                showToast('Please fill in all password fields', 'warning');
-                return;
-            }
-
-            const storedPassword = localStorage.getItem('adminPassword') || 'nfonap2025';
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        checkAdminSession();
+        setupEventListeners();
+    });
+</script>
             
-            if (currentPassword !== storedPassword) {
-                showToast('Current password is incorrect', 'error');
-                return;
-            }
-
-            if (newPassword !== confirmPassword) {
-                showToast('New passwords do not match', 'error');
-                return;
-            }
-
-            if (newPassword.length < 6) {
-                showToast('New password must be at least 6 characters', 'warning');
-                return;
-            }
-
-            localStorage.setItem('adminPassword', newPassword);
-            hideModal('password-modal');
-            showToast('Password changed successfully!', 'success');
-        }
-
-        // Toast notification function
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            if (!container) {
-                // Create container if it doesn't exist
-                const newContainer = document.createElement('div');
-                newContainer.id = 'toast-container';
-                newContainer.className = 'toast-container';
-                document.body.appendChild(newContainer);
-            }
-            
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `
-                <div>${type === 'success' ? '✓' : type === 'error' ? '✗' : type === 'warning' ? '⚠' : 'ℹ'}</div>
-                <div style="flex: 1;">${message}</div>
-                <button style="background:none; border:none; color:white; cursor:pointer; margin-left:10px;" onclick="this.parentElement.remove()">&times;</button>
-            `;
-            
-            container.appendChild(toast);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (toast.parentElement) {
-                    toast.remove();
-                }
-            }, 5000);
-        }
-    </script>
+  
 </body>
 </html>
