@@ -945,6 +945,25 @@
     let adminSession = null;
     let candidatesData = [];
 
+
+// Password reset function (accessible via console)
+window.resetAdminPassword = function(resetKey = 'nfonap2025reset') {
+    if (resetKey === 'nfonap2025reset') {
+        localStorage.removeItem('adminSession');
+        localStorage.removeItem('adminPassword');
+        localStorage.setItem('adminPassword', 'nfonap2025');
+        alert('Password reset to: nfonap2025');
+        window.location.reload();
+        return true;
+    }
+    alert('Invalid reset key');
+    return false;
+};
+
+// Add emergency reset link in console
+console.log('%c🔑 EMERGENCY PASSWORD RESET:', 'color: red; font-size: 16px; font-weight: bold;');
+console.log('Type: resetAdminPassword("nfonap2025reset")');
+
     // Check admin session
     async function checkAdminSession() {
         const session = localStorage.getItem('adminSession');
